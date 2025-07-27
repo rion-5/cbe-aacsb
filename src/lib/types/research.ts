@@ -27,3 +27,6 @@ export interface ResearchClassification {
   created_at: string;
   updated_at: string;
 }
+
+// Boolean 속성만 추출한 타입
+export type BooleanKeys = 'is_basic' | 'is_applied' | 'is_teaching' | 'is_peer_journal' | 'is_other_reviewed' | 'is_other_nonreviewed';

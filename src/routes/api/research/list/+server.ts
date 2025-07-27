@@ -1,3 +1,4 @@
+// src/routes/api/research/list/+server.ts
 import { json } from '@sveltejs/kit';
 import { query } from '$lib/server/db';
 
