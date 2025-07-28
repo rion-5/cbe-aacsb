@@ -1,3 +1,5 @@
+// src/routes/api/research/+server.ts
+
 import type { RequestHandler } from '@sveltejs/kit';
 import { query } from '$lib/server/db';
 import type { ResearchOutput, ResearchClassification } from '$lib/types/research';

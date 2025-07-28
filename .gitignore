@@ -8,6 +8,13 @@ node_modules
 /.svelte-kit
 /build
 /logs
+/dist
+/bin
+/cfrs-admin-dist
+
+#imprt file
+*.xlsx
+*.csv
 
 # OS
 .DS_Store
@@ -22,3 +29,6 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+start.bat
+start.sh
