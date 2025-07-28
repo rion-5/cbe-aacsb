@@ -4,7 +4,7 @@
   import { page } from '$app/stores';
 </script>
 
-<header class="bg-blue-600 p-4 text-white">
+<header class="bg-blue-950 p-4 text-white">
   <nav class="container mx-auto">
     <div class="flex flex-col items-center space-y-4 md:flex-row md:items-center md:space-y-0 md:gap-12">
       <h1 class="text-2xl font-bold">AACSB Management System</h1>
