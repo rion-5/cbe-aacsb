@@ -1,6 +1,6 @@
 <!-- src/routes/intellcectual_contribution/+page.svlete -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, afterUpdate } from 'svelte';
   import type { ResearchOutput, ResearchClassification, BooleanKeys, Faculty } from '$lib/types/research';
 
   let searchQuery = '';
@@ -12,6 +12,20 @@
   let editingOutput: (ResearchOutput & ResearchClassification) | null = null;
   let editEnglishTitle = '';
   let editEnglishJournal = '';
+  let addingOutput = false;
+  let modifyingOutput: (ResearchOutput & ResearchClassification) | null = null;
+  let deletingOutput: (ResearchOutput & ResearchClassification) | null = null;
+  let addTitle = '';
+  let addJournalName = '';
+  let addPublishedAt = '';
+  let modifyTitle = '';
+  let modifyJournalName = '';
+  let modifyPublishedAt = '';
+  let editDialogRef: HTMLDivElement | null = null;
+  let facultyDialogRef: HTMLDivElement | null = null;
+  let addDialogRef: HTMLDivElement | null = null;
+  let modifyDialogRef: HTMLDivElement | null = null;
+  let deleteDialogRef: HTMLDivElement | null = null;
 
   const tabs = [
     { key: '논문', label: '논문' },
@@ -21,12 +35,10 @@
     { key: '기타', label: '기타' }
   ];
 
-  // 한글 판별 함수
   function isKorean(text: string): boolean {
     return /[\uAC00-\uD7AF]/.test(text);
   }
 
-  // 탭에 따른 데이터 필터링
   $: filteredOutputs = researchOutputs.filter(output => {
     if (activeTab === '기타') {
       return !['논문', '저서', '학술발표', '연구비수혜'].includes(output.type ?? '');
@@ -34,13 +46,11 @@
     return output.type === activeTab;
   });
 
-  // 날짜 포맷팅
   function formatDate(isoDate: string): string {
     const date = new Date(isoDate);
-    return date.toISOString().split('T')[0]; // YYYY-MM-DD
+    return date.toISOString().split('T')[0];
   }
 
-  // 검색 및 데이터 조회
   async function fetchResearchOutputs() {
     if (!searchQuery) {
       researchOutputs = [];
@@ -71,7 +81,6 @@
     }
   }
 
-  // 동명이인 선택
   function selectFaculty(faculty: Faculty) {
     selectedFaculty = faculty;
     searchQuery = faculty.user_id;
@@ -79,7 +88,6 @@
     fetchResearchOutputs();
   }
 
-  // 분류 업데이트
   async function updateClassification(research_id: number, field: BooleanKeys, value: boolean) {
     const classification = researchOutputs.find(r => r.research_id === research_id);
     if (!classification) return;
@@ -123,14 +131,12 @@
     }
   }
 
-  // 수정 팝업 열기
   function openEditPopup(output: ResearchOutput & ResearchClassification) {
     editingOutput = output;
     editEnglishTitle = output.english_title ?? '';
     editEnglishJournal = output.english_journal ?? '';
   }
 
-  // 수정 저장
   async function saveEdit() {
     if (!editingOutput) return;
 
@@ -157,15 +163,149 @@
     }
   }
 
-  // 팝업 닫기
+  function openAddPopup() {
+    if (!selectedFaculty) return;
+    addingOutput = true;
+    addTitle = '';
+    addJournalName = '';
+    addPublishedAt = '';
+  }
+
+  async function saveAdd() {
+    if (!selectedFaculty) return;
+
+    try {
+      const response = await fetch('/api/intellectual_contribution', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fac_nip: selectedFaculty.user_id,
+          title: addTitle,
+          journal_name: addJournalName || null,
+          published_at: addPublishedAt,
+          type: activeTab
+        })
+      });
+      if (!response.ok) throw new Error('Failed to add');
+      const newOutput = await response.json();
+      researchOutputs = [
+        { ...newOutput, is_basic: false, is_applied: false, is_teaching: false, is_peer_journal: false, is_other_reviewed: false, is_other_nonreviewed: false },
+        ...researchOutputs
+      ];
+      addingOutput = false;
+    } catch (error) {
+      console.error('Error adding output:', error);
+      alert('추가에 실패했습니다.');
+    }
+  }
+
+  function openModifyPopup(output: ResearchOutput & ResearchClassification) {
+    modifyingOutput = output;
+    modifyTitle = output.title;
+    modifyJournalName = output.journal_name ?? '';
+    modifyPublishedAt = output.published_at;
+  }
+
+  async function saveModify() {
+    if (!modifyingOutput) return;
+
+    try {
+      const response = await fetch('/api/intellectual_contribution', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          research_id: modifyingOutput.research_id,
+          title: modifyTitle,
+          journal_name: modifyJournalName || null,
+          published_at: modifyPublishedAt
+        })
+      });
+      if (!response.ok) throw new Error('Failed to update');
+      const updatedOutput = await response.json();
+      researchOutputs = researchOutputs.map(r =>
+        r.research_id === modifyingOutput!.research_id ? { ...r, ...updatedOutput } : r
+      );
+      modifyingOutput = null;
+    } catch (error) {
+      console.error('Error modifying output:', error);
+      alert('수정에 실패했습니다.');
+    }
+  }
+
+  function openDeletePopup(output: ResearchOutput & ResearchClassification) {
+    deletingOutput = output;
+  }
+
+  async function confirmDelete() {
+    if (!deletingOutput) return;
+
+    try {
+      const response = await fetch('/api/intellectual_contribution', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ research_id: deletingOutput.research_id })
+      });
+      if (!response.ok) throw new Error('Failed to delete');
+      researchOutputs = researchOutputs.filter(r => r.research_id !== deletingOutput!.research_id);
+      deletingOutput = null;
+    } catch (error) {
+      console.error('Error deleting output:', error);
+      alert('삭제에 실패했습니다.');
+    }
+  }
+
   function closeEditPopup() {
     editingOutput = null;
   }
 
-  // 동명이인 팝업 닫기
   function closeFacultyPopup() {
     facultyList = [];
   }
+
+  function closeAddPopup() {
+    addingOutput = false;
+  }
+
+  function closeModifyPopup() {
+    modifyingOutput = null;
+  }
+
+  function closeDeletePopup() {
+    deletingOutput = null;
+  }
+
+  function trapFocus(dialog: HTMLDivElement | null, isOpen: boolean) {
+    if (!dialog || !isOpen) return;
+    const focusableElements = dialog.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    ) as NodeListOf<HTMLElement>;
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    });
+
+    if (firstElement) firstElement.focus();
+  }
+
+  $: trapFocus(editDialogRef, !!editingOutput);
+  $: trapFocus(facultyDialogRef, facultyList.length > 0);
+  $: trapFocus(addDialogRef, addingOutput);
+  $: trapFocus(modifyDialogRef, !!modifyingOutput);
+  $: trapFocus(deleteDialogRef, !!deletingOutput);
 
   onMount(fetchResearchOutputs);
 </script>
@@ -200,7 +340,7 @@
   </div>
 </div>
 
-<!-- {#if selectedFaculty}
+{#if selectedFaculty}
   <div class="mb-4 bg-gray-100 p-3 rounded text-base text-gray-700">
     <span>ID: {selectedFaculty.user_id}</span> |
     <span>성명: {selectedFaculty.name ?? '-'}</span> |
@@ -210,20 +350,9 @@
     <span>직급: {selectedFaculty.job_rank ?? '-'}</span> |
     <span>최종학위: {selectedFaculty.highest_degree ?? '-'}</span>
   </div>
-{/if} -->
-
-
-{#if selectedFaculty}
-  <div class="mb-4 bg-gray-100 p-3 rounded text-base text-gray-700">
-    <span>{selectedFaculty.name ?? '-'}</span> |
-    <span>{selectedFaculty.college ?? '-'}</span> |
-    <span>{selectedFaculty.department ?? '-'}</span> |
-    <span>{selectedFaculty.job_type ?? '-'}</span> |
-    <span>{selectedFaculty.highest_degree ?? '-'}</span>
-  </div>
 {/if}
 
-<div class="mb-4">
+<div class="mb-4 flex justify-between items-center">
   <div class="flex border-b">
     {#each tabs as tab}
       <button
@@ -238,6 +367,39 @@
       </button>
     {/each}
   </div>
+  {#if selectedFaculty}
+    <div class="flex gap-2">
+      <button
+        class="p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        on:click={openAddPopup}
+        aria-label="Add new research output"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+      <button
+        class="p-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+        on:click={() => filteredOutputs.some(o => o.data_source === 'manual') || alert('수정 가능한 항목을 선택하세요.')}
+        disabled={!filteredOutputs.some(o => o.data_source === 'manual')}
+        aria-label="Modify selected research output"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      </button>
+      <button
+        class="p-2 bg-red-500 text-white rounded hover:bg-red-600"
+        on:click={() => filteredOutputs.some(o => o.data_source === 'manual') || alert('삭제 가능한 항목을 선택하세요.')}
+        disabled={!filteredOutputs.some(o => o.data_source === 'manual')}
+        aria-label="Delete selected research output"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+        </svg>
+      </button>
+    </div>
+  {/if}
 </div>
 
 {#if filteredOutputs.length === 0 && selectedFaculty}
@@ -251,6 +413,7 @@
         <th class="border p-2 w-58 whitespace-normal break-words">Journal</th>
         <th class="border p-2 w-50 whitespace-normal break-words">Portfolio of<br />Intellectual</th>
         <th class="border p-2 w-50 whitespace-normal break-words">Types of Intellectual<br />Contributions</th>
+        <th class="border p-2 w-20">Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -341,6 +504,28 @@
               <span class="ml-1">Other Nonreviewed</span>
             </label>
           </td>
+          <td class="border p-2">
+            {#if output.data_source === 'manual'}
+              <button
+                class="mr-2 text-yellow-500 hover:text-yellow-600"
+                on:click={() => openModifyPopup(output)}
+                aria-label="Modify research output"
+              >
+                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+              <button
+                class="text-red-500 hover:text-red-600"
+                on:click={() => openDeletePopup(output)}
+                aria-label="Delete research output"
+              >
+                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                </svg>
+              </button>
+            {/if}
+          </td>
         </tr>
       {/each}
     </tbody>
@@ -349,8 +534,7 @@
 
 {#if facultyList.length > 0}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="facultyModalTitle">
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="bg-white p-6 rounded-lg shadow-lg w-[600px]" on:keydown={e => e.key === 'Escape' && closeFacultyPopup()}>
+    <div bind:this={facultyDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-[600px]" on:keydown={e => e.key === 'Escape' && closeFacultyPopup()} tabindex="-1">
       <h3 id="facultyModalTitle" class="text-lg font-semibold mb-4">동명이인 선택</h3>
       <table class="w-full border-collapse border text-sm">
         <thead>
@@ -400,9 +584,8 @@
 {/if}
 
 {#if editingOutput}
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="facultyModalTitle">
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeEditPopup()}>
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <div bind:this={editDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeEditPopup()} tabindex="-1">
       <h3 id="editModalTitle" class="text-lg font-semibold mb-4">Edit English Title and Journal</h3>
       <div class="mb-4">
         <label for="editEnglishTitle" class="block mb-1">English Title:</label>
@@ -442,6 +625,131 @@
           on:click={saveEdit}
         >
           Save
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if addingOutput}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+    <div bind:this={addDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeAddPopup()} tabindex="-1">
+      <h3 id="addModalTitle" class="text-lg font-semibold mb-4">Add Research Output</h3>
+      <div class="mb-4">
+        <label for="addTitle" class="block mb-1">Title:</label>
+        <input
+          id="addTitle"
+          type="text"
+          bind:value={addTitle}
+          class="w-full border p-2 rounded"
+          placeholder="Enter title"
+        />
+      </div>
+      <div class="mb-4">
+        <label for="addJournalName" class="block mb-1">Journal Name (optional):</label>
+        <input
+          id="addJournalName"
+          type="text"
+          bind:value={addJournalName}
+          class="w-full border p-2 rounded"
+          placeholder="Enter journal name"
+        />
+      </div>
+      <div class="mb-4">
+        <label for="addPublishedAt" class="block mb-1">Publication Date:</label>
+        <input
+          id="addPublishedAt"
+          type="date"
+          bind:value={addPublishedAt}
+          class="w-full border p-2 rounded"
+        />
+      </div>
+      <div class="flex justify-end gap-2">
+        <button
+          class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          on:click={closeAddPopup}
+        >
+          Cancel
+        </button>
+        <button
+          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          on:click={saveAdd}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if modifyingOutput}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="modifyModalTitle">
+    <div bind:this={modifyDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeModifyPopup()} tabindex="-1">
+      <h3 id="modifyModalTitle" class="text-lg font-semibold mb-4">Modify Research Output</h3>
+      <div class="mb-4">
+        <label for="modifyTitle" class="block mb-1">Title:</label>
+        <input
+          id="modifyTitle"
+          type="text"
+          bind:value={modifyTitle}
+          class="w-full border p-2 rounded"
+          placeholder="Enter title"
+        />
+      </div>
+      <div class="mb-4">
+        <label for="modifyJournalName" class="block mb-1">Journal Name (optional):</label>
+        <input
+          id="modifyJournalName"
+          type="text"
+          bind:value={modifyJournalName}
+          class="w-full border p-2 rounded"
+          placeholder="Enter journal name"
+        />
+      </div>
+      <div class="mb-4">
+        <label for="modifyPublishedAt" class="block mb-1">Publication Date:</label>
+        <input
+          id="modifyPublishedAt"
+          type="date"
+          bind:value={modifyPublishedAt}
+          class="w-full border p-2 rounded"
+        />
+      </div>
+      <div class="flex justify-end gap-2">
+        <button
+          class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          on:click={closeModifyPopup}
+        >
+          Cancel
+        </button>
+        <button
+          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          on:click={saveModify}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if deletingOutput}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+    <div bind:this={deleteDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeDeletePopup()} tabindex="-1">
+      <h3 id="deleteModalTitle" class="text-lg font-semibold mb-4">Delete Research Output</h3>
+      <p class="mb-4">Are you sure you want to delete "{deletingOutput.title}"?</p>
+      <div class="flex justify-end gap-2">
+        <button
+          class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          on:click={closeDeletePopup}
+        >
+          Cancel
+        </button>
+        <button
+          class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          on:click={confirmDelete}
+        >
+          Delete
         </button>
       </div>
     </div>
