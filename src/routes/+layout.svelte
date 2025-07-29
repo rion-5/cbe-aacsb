@@ -19,6 +19,14 @@
         </li>
         <li>
           <a
+            href="/intellectual_contribution"
+            class="relative px-2 py-1 transition-all duration-200 hover:text-blue-200 hover:scale-105 {$page.url.pathname === '/intellectual_contribution' ? 'font-bold after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-blue-200' : ''}"
+          >
+            Intellectual Contribution
+          </a>
+        </li>
+        <li>
+          <a
             href="/table3-1"
             class="relative px-2 py-1 transition-all duration-200 hover:text-blue-200 hover:scale-105 {$page.url.pathname === '/table3-1' ? 'font-bold after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:bg-blue-200' : ''}"
           >

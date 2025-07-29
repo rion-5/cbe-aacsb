@@ -15,7 +15,7 @@
 
   async function fetchResearchOutputs() {
     if (!facNip) return;
-    const response = await fetch(`/api/research?fac_nip=${facNip}`);
+    const response = await fetch(`/api/intellectual_contribution?fac_nip=${facNip}`);
     researchOutputs = await response.json();
   }
 
