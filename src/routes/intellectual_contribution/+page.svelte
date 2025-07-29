@@ -200,7 +200,7 @@
   </div>
 </div>
 
-{#if selectedFaculty}
+<!-- {#if selectedFaculty}
   <div class="mb-4 bg-gray-100 p-3 rounded text-base text-gray-700">
     <span>ID: {selectedFaculty.user_id}</span> |
     <span>성명: {selectedFaculty.name ?? '-'}</span> |
@@ -209,6 +209,17 @@
     <span>직무유형: {selectedFaculty.job_type ?? '-'}</span> |
     <span>직급: {selectedFaculty.job_rank ?? '-'}</span> |
     <span>최종학위: {selectedFaculty.highest_degree ?? '-'}</span>
+  </div>
+{/if} -->
+
+
+{#if selectedFaculty}
+  <div class="mb-4 bg-gray-100 p-3 rounded text-base text-gray-700">
+    <span>{selectedFaculty.name ?? '-'}</span> |
+    <span>{selectedFaculty.college ?? '-'}</span> |
+    <span>{selectedFaculty.department ?? '-'}</span> |
+    <span>{selectedFaculty.job_type ?? '-'}</span> |
+    <span>{selectedFaculty.highest_degree ?? '-'}</span>
   </div>
 {/if}
 
@@ -338,6 +349,7 @@
 
 {#if facultyList.length > 0}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="facultyModalTitle">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="bg-white p-6 rounded-lg shadow-lg w-[600px]" on:keydown={e => e.key === 'Escape' && closeFacultyPopup()}>
       <h3 id="facultyModalTitle" class="text-lg font-semibold mb-4">동명이인 선택</h3>
       <table class="w-full border-collapse border text-sm">
@@ -389,6 +401,7 @@
 
 {#if editingOutput}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="facultyModalTitle">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeEditPopup()}>
       <h3 id="editModalTitle" class="text-lg font-semibold mb-4">Edit English Title and Journal</h3>
       <div class="mb-4">
