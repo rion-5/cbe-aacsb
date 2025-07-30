@@ -395,7 +395,7 @@
       </tr>
     </thead>
     <tbody>
-    {#if filteredOutputs.length === 0 && selectedFaculty}
+          {#if filteredOutputs.length === 0 && selectedFaculty}
       <tr>
         <td colspan="6" class="border p-4 text-center text-gray-500">
           해당 탭에 데이터가 없습니다.
@@ -406,11 +406,18 @@
         <tr>
           <td class="border p-2">
             {output.english_title || output.title}
+            {#if output.doi}
+              <a href={`https://doi.org/${output.doi}`} target="_blank" class="text-blue-500 hover:underline">
+               [DOI: {output.doi}]
+              </a>
+            {:else}
+              {output.english_title || output.title}
+            {/if}
             {#if output.english_title && isKorean(output.title)}
               <span class="text-gray-500 text-sm"> ({output.title})</span>
             {/if}
             {#if isKorean(output.title)}
-              <button class="ml-2 text-blue-500 hover:text-blue-700" on:click={() => openEditPopup(output)} aria-label="add english title">
+                <button class="ml-2 text-blue-500 hover:text-blue-700" on:click={() => openEditPopup(output)} aria-label="add english title">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
@@ -422,13 +429,6 @@
             {output.english_journal || output.journal_name || '-'}
             {#if output.english_journal && isKorean(output.journal_name ?? '')}
               <span class="text-gray-500 text-sm"> ({output.journal_name})</span>
-            {/if}
-            {#if isKorean(output.journal_name ?? '')}
-              <button class="ml-2 text-blue-500 hover:text-blue-700" on:click={() => openEditPopup(output)} aria-label="add english journal">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-              </button>
             {/if}
           </td>
           <td class="border p-2">
@@ -513,7 +513,7 @@
           </td>
         </tr>
       {/each}
-    {/if}
+      {/if}
     </tbody>
   </table>
 
@@ -521,7 +521,7 @@
 {#if facultyList.length > 0}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="facultyModalTitle">
     <div bind:this={facultyDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-[600px]" on:keydown={e => e.key === 'Escape' && closeFacultyPopup()} tabindex="-1"
-      role="dialog" 
+                 role="dialog" 
       aria-labelledby="facultyModalTitle">
       <h3 id="facultyModalTitle" class="text-lg font-semibold mb-4">동명이인 선택</h3>
       <table class="w-full border-collapse border text-sm">
@@ -574,8 +574,8 @@
 {#if editingOutput}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
     <div bind:this={editDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeEditPopup()} tabindex="-1"
-      role="dialog" 
-      aria-labelledby="facultyModalTitle">>
+                 role="dialog" 
+      aria-labelledby="editModalTitle" >
       <h3 id="editModalTitle" class="text-lg font-semibold mb-4">Edit English Title and Journal</h3>
       <div class="mb-4">
         <label for="editEnglishTitle" class="block mb-1">English Title:</label>
@@ -624,8 +624,8 @@
 {#if addingOutput}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
     <div bind:this={addDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeAddPopup()} tabindex="-1"
-      role="dialog" 
-      aria-labelledby="facultyModalTitle">>
+           role="dialog" 
+      aria-labelledby="addModalTitle" >
       <h3 id="addModalTitle" class="text-lg font-semibold mb-4">Add Research Output</h3>
       <div class="mb-4">
         <label for="addTitle" class="block mb-1">Title:</label>
@@ -677,8 +677,8 @@
 {#if modifyingOutput}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="modifyModalTitle">
     <div bind:this={modifyDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeModifyPopup()} tabindex="-1"
-      role="dialog" 
-      aria-labelledby="facultyModalTitle">>
+           role="dialog" 
+      aria-labelledby="modifyModalTitle" >
       <h3 id="modifyModalTitle" class="text-lg font-semibold mb-4">Modify Research Output</h3>
       <div class="mb-4">
         <label for="modifyTitle" class="block mb-1">Title:</label>
@@ -730,8 +730,8 @@
 {#if deletingOutput}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
     <div bind:this={deleteDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeDeletePopup()} tabindex="-1"
-      role="dialog" 
-      aria-labelledby="facultyModalTitle">>
+     role="dialog" 
+      aria-labelledby="deleteModalTitle" >
       <h3 id="deleteModalTitle" class="text-lg font-semibold mb-4">Delete Research Output</h3>
       <p class="mb-4">Are you sure you want to delete "{deletingOutput.title}"?</p>
       <div class="flex justify-end gap-2">

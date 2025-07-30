@@ -53,19 +53,17 @@
         <h3 class="text-lg font-medium mt-4 mb-3">{discipline.name}</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {#each facultyData.filter(f => f.discipline_code === discipline.code) as faculty}
-            <div class="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
-              <img
-                src={`/faculty_photo/{faculty.user_id}.png`}
-                alt={`${faculty.name}'s photo`}
-                class="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
-                on:error={(e) => (e.currentTarget.src = `/faculty_photo/{faculty.user_id}.jpg`)}
-              />
-              <h4 class="text-lg font-semibold text-center">{faculty.name}</h4>
-              <p class="text-center text-gray-600">{faculty.english_name}</p>
-              <p class="text-sm text-gray-500 text-center mt-2">
-                {faculty.college} {faculty.department || faculty.college} {faculty.job_rank} 
-                {faculty.highest_degree}({faculty.highest_degree_year})
-              </p>
+            <div class="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow flex">
+              <div class="w-1/3 flex items-center">
+                <h4 class="text-xl font-semibold">{faculty.name}</h4>
+              </div>
+              <div class="w-2/3 flex flex-col justify-center">
+                <p class="text-sm text-gray-600">{faculty.english_name}</p>
+                <p class="text-sm text-gray-500">
+                  {faculty.college} {faculty.department || faculty.college} {faculty.job_rank} 
+                  {faculty.highest_degree}({faculty.highest_degree_year})
+                </p>
+              </div>
             </div>
           {/each}
         </div>

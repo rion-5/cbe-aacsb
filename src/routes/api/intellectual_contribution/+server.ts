@@ -13,7 +13,6 @@ export const GET: RequestHandler = async ({ url }) => {
   }
 
   try {
-    // aacsb_faculty에서 user_id 또는 name으로 조회
     const facultyList = await query<Faculty>(
       `
       SELECT user_id, name, college, department, job_type, job_rank, highest_degree
@@ -27,7 +26,6 @@ export const GET: RequestHandler = async ({ url }) => {
       return new Response(JSON.stringify({ error: 'No faculty found' }), { status: 404 });
     }
 
-    // 동명이인 처리: 복수 faculty 반환
     if (facultyList.length > 1) {
       return new Response(JSON.stringify({ facultyList }), {
         status: 200,
@@ -35,7 +33,6 @@ export const GET: RequestHandler = async ({ url }) => {
       });
     }
 
-    // 단일 faculty의 연구성과 조회
     const fac_nip = facultyList[0].user_id;
     const params: (string | number)[] = [fac_nip];
     let conditions = ['ro.fac_nip = $1'];
@@ -73,9 +70,9 @@ export const GET: RequestHandler = async ({ url }) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching data:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
+    return new Response(JSON.stringify({ error: `Internal server error: ${error.message}` }), { status: 500 });
   }
 };
 
@@ -101,9 +98,9 @@ export const POST: RequestHandler = async ({ request }) => {
       status: 201,
       headers: { 'Content-Type': 'application/json' }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error adding research output:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
+    return new Response(JSON.stringify({ error: `Internal server error: ${error.message}` }), { status: 500 });
   }
 };
 
@@ -114,14 +111,16 @@ export const PATCH: RequestHandler = async ({ request }) => {
       return new Response(JSON.stringify({ error: 'research_id is required' }), { status: 400 });
     }
 
-    // data_source='manual' 확인
-    const research = await query<ResearchOutput>(
-      `SELECT data_source FROM aacsb_research_outputs WHERE research_id = $1`,
-      [research_id]
-    );
-    if (research.length === 0 || research[0].data_source !== 'manual') {
-      return new Response(JSON.stringify({ error: 'Only manual data can be updated' }), { status: 403 });
-    }
+    // const research = await query<ResearchOutput>(
+    //   `SELECT data_source FROM aacsb_research_outputs WHERE research_id = $1`,
+    //   [research_id]
+    // );
+    // if (research.length === 0) {
+    //   return new Response(JSON.stringify({ error: 'Research record not found' }), { status: 404 });
+    // }
+    // if (research[0].data_source !== 'manual') {
+    //   return new Response(JSON.stringify({ error: 'Only manual data can be updated' }), { status: 403 });
+    // }
 
     const params: (string | number | null)[] = [research_id];
     const updates: string[] = [];
@@ -136,23 +135,70 @@ export const PATCH: RequestHandler = async ({ request }) => {
     if (updates.length === 0) {
       return new Response(JSON.stringify({ error: 'No fields to update' }), { status: 400 });
     }
-
-    await query(
+    console.log(params);
+    const result = await query<ResearchOutput>(
       `
       UPDATE aacsb_research_outputs
       SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
       WHERE research_id = $1
+      RETURNING *
       `,
       params
     );
 
-    return new Response(JSON.stringify({ message: 'Updated successfully' }), {
+    if (result.length === 0) {
+      return new Response(JSON.stringify({ error: 'No record updated' }), { status: 404 });
+    }
+
+    return new Response(JSON.stringify(result[0]), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating research output:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
+    return new Response(JSON.stringify({ error: `Internal server error: ${error.message}` }), { status: 500 });
+  }
+};
+
+export const PUT: RequestHandler = async ({ request }) => {
+  try {
+    const { research_id, title, journal_name, published_at } = await request.json();
+    if (!research_id || !title || !published_at) {
+      return new Response(JSON.stringify({ error: 'research_id, title, published_at are required' }), { status: 400 });
+    }
+
+    const research = await query<ResearchOutput>(
+      `SELECT data_source FROM aacsb_research_outputs WHERE research_id = $1`,
+      [research_id]
+    );
+    if (research.length === 0) {
+      return new Response(JSON.stringify({ error: 'Research record not found' }), { status: 404 });
+    }
+    if (research[0].data_source !== 'manual') {
+      return new Response(JSON.stringify({ error: 'Only manual data can be updated' }), { status: 403 });
+    }
+
+    const result = await query<ResearchOutput>(
+      `
+      UPDATE aacsb_research_outputs
+      SET title = $2, journal_name = $3, published_at = $4, updated_at = CURRENT_TIMESTAMP
+      WHERE research_id = $1
+      RETURNING *
+      `,
+      [research_id, title, journal_name || null, published_at]
+    );
+
+    if (result.length === 0) {
+      return new Response(JSON.stringify({ error: 'No record updated' }), { status: 404 });
+    }
+
+    return new Response(JSON.stringify(result[0]), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (error: any) {
+    console.error('Error updating research output:', error);
+    return new Response(JSON.stringify({ error: `Internal server error: ${error.message}` }), { status: 500 });
   }
 };
 
@@ -163,12 +209,14 @@ export const DELETE: RequestHandler = async ({ request }) => {
       return new Response(JSON.stringify({ error: 'research_id is required' }), { status: 400 });
     }
 
-    // data_source='manual' 확인
     const research = await query<ResearchOutput>(
       `SELECT data_source FROM aacsb_research_outputs WHERE research_id = $1`,
       [research_id]
     );
-    if (research.length === 0 || research[0].data_source !== 'manual') {
+    if (research.length === 0) {
+      return new Response(JSON.stringify({ error: 'Research record not found' }), { status: 404 });
+    }
+    if (research[0].data_source !== 'manual') {
       return new Response(JSON.stringify({ error: 'Only manual data can be deleted' }), { status: 403 });
     }
 
@@ -181,8 +229,8 @@ export const DELETE: RequestHandler = async ({ request }) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting research output:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
+    return new Response(JSON.stringify({ error: `Internal server error: ${error.message}` }), { status: 500 });
   }
 };
