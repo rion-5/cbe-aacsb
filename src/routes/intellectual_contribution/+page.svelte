@@ -50,6 +50,13 @@
     const date = new Date(isoDate);
     return date.toISOString().split('T')[0];
   }
+  function formatDateKST(isoDate: string): string {
+    const date = new Date(isoDate);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth()는 0부터 시작
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
 
   async function fetchResearchOutputs() {
     if (!searchQuery) {
@@ -405,8 +412,9 @@
       {#each filteredOutputs as output}
         <tr>
           <td class="border p-2">
-            {output.english_title || output.title}
+            
             {#if output.doi}
+              {output.english_title || output.title}
               <a href={`https://doi.org/${output.doi}`} target="_blank" class="text-blue-500 hover:underline">
                [DOI: {output.doi}]
               </a>
@@ -424,7 +432,7 @@
               </button>
             {/if}
           </td>
-          <td class="border p-2">{formatDate(output.published_at)}</td>
+          <td class="border p-2">{formatDateKST(output.published_at)}</td>
           <td class="border p-2">
             {output.english_journal || output.journal_name || '-'}
             {#if output.english_journal && isKorean(output.journal_name ?? '')}

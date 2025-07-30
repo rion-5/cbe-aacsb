@@ -111,16 +111,6 @@ export const PATCH: RequestHandler = async ({ request }) => {
       return new Response(JSON.stringify({ error: 'research_id is required' }), { status: 400 });
     }
 
-    // const research = await query<ResearchOutput>(
-    //   `SELECT data_source FROM aacsb_research_outputs WHERE research_id = $1`,
-    //   [research_id]
-    // );
-    // if (research.length === 0) {
-    //   return new Response(JSON.stringify({ error: 'Research record not found' }), { status: 404 });
-    // }
-    // if (research[0].data_source !== 'manual') {
-    //   return new Response(JSON.stringify({ error: 'Only manual data can be updated' }), { status: 403 });
-    // }
 
     const params: (string | number | null)[] = [research_id];
     const updates: string[] = [];
