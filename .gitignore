@@ -12,9 +12,12 @@ node_modules
 /bin
 /cfrs-admin-dist
 
-#imprt file
+#import file
 *.xlsx
 *.csv
+*.png
+*.jpg
+*.jpeg
 
 # OS
 .DS_Store

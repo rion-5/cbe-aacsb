@@ -1,165 +1,75 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { ResearchOutput, ResearchClassification, BooleanKeys } from '$lib/types/research';
+  import type { FacultyData } from '$lib/types/faculty';
 
-  let facNip = 'A033411';
-  let researchOutputs: (ResearchOutput & ResearchClassification)[] = [];
-  let year = new Date().getFullYear();
+  let disciplines: { code: string; name: string; level: string }[] = [];
+  let facultyData: FacultyData[] = [];
+  let isLoading = false;
+  let error: string | null = null;
 
-  // 발행일 포맷팅 함수
-  function formatDate(isoDate: string): string {
-    const date = new Date(isoDate);
-    return date.toISOString().split('T')[0]; // "2025-06-22"
-    // 또는 다른 형식: return `${date.getFullYear()}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getDate().toString().padStart(2, '0')}`; // "2025.06.22"
-  }
-
-  async function fetchResearchOutputs() {
-    if (!facNip) return;
-    const response = await fetch(`/api/intellectual_contribution?fac_nip=${facNip}`);
-    researchOutputs = await response.json();
-  }
-
-  async function updateClassification(research_id: number, field: BooleanKeys, value: boolean) {
-    const classification = researchOutputs.find(r => r.research_id === research_id);
-    if (!classification) return;
-
-    // 연구 유형과 성과 형태 필드 정의
-    const researchTypeFields: BooleanKeys[] = ['is_basic', 'is_applied', 'is_teaching'];
-    const contributionTypeFields: BooleanKeys[] = ['is_peer_journal', 'is_other_reviewed', 'is_other_nonreviewed'];
-
-    // 모든 필드를 명시적으로 초기화하여 undefined 배제
-    const updateData: ResearchClassification = {
-      fac_nip: facNip,
-      research_id,
-      is_basic: classification.is_basic ?? false,
-      is_applied: classification.is_applied ?? false,
-      is_teaching: classification.is_teaching ?? false,
-      is_peer_journal: classification.is_peer_journal ?? false,
-      is_other_reviewed: classification.is_other_reviewed ?? false,
-      is_other_nonreviewed: classification.is_other_nonreviewed ?? false,
-      created_at: classification.created_at,
-      updated_at: classification.updated_at
-    };
-
-    // 선택된 필드에 따라 업데이트
-    if (researchTypeFields.includes(field)) {
-      updateData[field] = value;
-      researchTypeFields.forEach(f => {
-        if (f !== field) updateData[f] = false;
-      });
-    } else if (contributionTypeFields.includes(field)) {
-      updateData[field] = value;
-      contributionTypeFields.forEach(f => {
-        if (f !== field) updateData[f] = false;
-      });
+  async function fetchDisciplines() {
+    try {
+      const response = await fetch('/api/disciplines');
+      if (!response.ok) throw new Error('Failed to fetch disciplines');
+      disciplines = await response.json();
+    } catch (err) {
+      error = 'Failed to load disciplines';
+      console.error(err);
     }
-
-    // 서버에 업데이트 요청
-    await fetch('/api/classifications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updateData)
-    });
-
-    // UI 즉시 갱신
-    researchOutputs = researchOutputs.map(r =>
-      r.research_id === research_id ? { ...r, ...updateData } : r
-    );
   }
 
-  onMount(fetchResearchOutputs);
+  async function fetchFaculty() {
+    isLoading = true;
+    error = null;
+    try {
+      const response = await fetch('/api/faculty');
+      if (!response.ok) throw new Error('Failed to fetch faculty data');
+      facultyData = await response.json();
+    } catch (err) {
+      error = 'Failed to load faculty data';
+      console.error(err);
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  onMount(() => {
+    fetchDisciplines();
+    fetchFaculty();
+  });
 </script>
 
-<div class="mb-4">
-  <h2 class="text-xl font-semibold">연도: {year}</h2>
-  <div class="mt-2">
-    <label for="facNip" class="mr-2">교원 NIP:</label>
-    <input
-      id="facNip"
-      type="text"
-      bind:value={facNip}
-      on:input={fetchResearchOutputs}
-      class="border p-2 rounded"
-      placeholder="교원 NIP 입력"
-    />
-  </div>
-</div>
+<div class="container mx-auto p-4">
+  <h1 class="text-2xl font-bold mb-4">AACSB Faculty List</h1>
 
-<table class="w-full border-collapse border">
-  <thead>
-    <tr class="bg-gray-200">
-      <th class="border p-2">Title</th>
-      <th class="border p-2">Publication Date</th>
-      <th class="border p-2">Journal</th>
-      <th class="border p-2">Portfolio of Intellectual</th>
-      <th class="border p-2">Types of Intellectual Contributions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {#each researchOutputs as output}
-      <tr>
-        <td class="border p-2">{output.title}</td>
-        <td class="border p-2">{formatDate(output.published_at)}</td>
-        <td class="border p-2">{output.journal_name || '-'}</td>
-        <td class="border p-2">
-          <label class="inline-flex items-center mr-2">
-            <input
-              type="radio"
-              name={`research_type_${output.research_id}`}
-              checked={output.is_basic}
-              on:change={() => updateClassification(output.research_id, 'is_basic', true)}
-            />
-            <span class="ml-1">Basic Scholarship</span>
-          </label>
-          <label class="inline-flex items-center mr-2">
-            <input
-              type="radio"
-              name={`research_type_${output.research_id}`}
-              checked={output.is_applied}
-              on:change={() => updateClassification(output.research_id, 'is_applied', true)}
-            />
-            <span class="ml-1">Applied Scholarship</span>
-          </label>
-          <label class="inline-flex items-center">
-            <input
-              type="radio"
-              name={`research_type_${output.research_id}`}
-              checked={output.is_teaching}
-              on:change={() => updateClassification(output.research_id, 'is_teaching', true)}
-            />
-            <span class="ml-1">Teaching Scholarship</span>
-          </label>
-        </td>
-        <td class="border p-2">
-          <label class="inline-flex items-center mr-2">
-            <input
-              type="radio"
-              name={`contribution_type_${output.research_id}`}
-              checked={output.is_peer_journal}
-              on:change={() => updateClassification(output.research_id, 'is_peer_journal', true)}
-            />
-            <span class="ml-1">Peer reviewed Journal</span>
-          </label>
-          <label class="inline-flex items-center mr-2">
-            <input
-              type="radio"
-              name={`contribution_type_${output.research_id}`}
-              checked={output.is_other_reviewed}
-              on:change={() => updateClassification(output.research_id, 'is_other_reviewed', true)}
-            />
-            <span class="ml-1">Other reviewed Journal</span>
-          </label>
-          <label class="inline-flex items-center">
-            <input
-              type="radio"
-              name={`contribution_type_${output.research_id}`}
-              checked={output.is_other_nonreviewed}
-              on:change={() => updateClassification(output.research_id, 'is_other_nonreviewed', true)}
-            />
-            <span class="ml-1">Other Nonreviewed</span>
-          </label>
-        </td>
-      </tr>
+  {#if isLoading}
+    <p class="text-gray-500">Loading...</p>
+  {:else if error}
+    <p class="text-red-500">{error}</p>
+  {:else}
+    {#each ['Undergraduate', 'Graduate', 'IndustrialConvergence'] as level}
+      <h2 class="text-xl font-semibold mt-6 mb-4">{level}</h2>
+      {#each disciplines.filter(d => d.level === level) as discipline}
+        <h3 class="text-lg font-medium mt-4 mb-3">{discipline.name}</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {#each facultyData.filter(f => f.discipline_code === discipline.code) as faculty}
+            <div class="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition-shadow">
+              <img
+                src={`/faculty_photo/{faculty.user_id}.png`}
+                alt={`${faculty.name}'s photo`}
+                class="w-24 h-24 rounded-full mx-auto mb-4 object-cover"
+                on:error={(e) => (e.currentTarget.src = `/faculty_photo/{faculty.user_id}.jpg`)}
+              />
+              <h4 class="text-lg font-semibold text-center">{faculty.name}</h4>
+              <p class="text-center text-gray-600">{faculty.english_name}</p>
+              <p class="text-sm text-gray-500 text-center mt-2">
+                {faculty.college} {faculty.department || faculty.college} {faculty.job_rank} 
+                {faculty.highest_degree}({faculty.highest_degree_year})
+              </p>
+            </div>
+          {/each}
+        </div>
+      {/each}
     {/each}
-  </tbody>
-</table>
+  {/if}
+</div>

@@ -1,3 +1,4 @@
+// src/routes/api/report/table3-1/+server.ts
 import { json } from '@sveltejs/kit';
 import { query } from '$lib/server/db';
 import type { Table31ReportData } from '$lib/types/report';
