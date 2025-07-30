@@ -15,7 +15,12 @@ export const GET: RequestHandler = async ({ url }) => {
   try {
     const facultyList = await query<Faculty>(
       `
-      SELECT user_id, name, college, department, job_type, job_rank, highest_degree
+      SELECT user_id, name, college, department, job_type, job_rank, highest_degree,
+        CASE 
+          WHEN highest_degree = '학사' THEN bachelor_degree_year
+          WHEN highest_degree = '석사' THEN master_degree_year
+          WHEN highest_degree = '박사' THEN doctoral_degree_year
+        END AS highest_degree_year
       FROM aacsb_faculty
       WHERE user_id = $1 OR name = $1
       `,

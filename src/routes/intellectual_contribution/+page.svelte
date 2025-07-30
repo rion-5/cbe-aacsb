@@ -349,13 +349,12 @@
 
 {#if selectedFaculty}
   <div class="mb-4 bg-gray-100 p-3 rounded text-base text-gray-700">
-    <span>ID: {selectedFaculty.user_id}</span> |
-    <span>성명: {selectedFaculty.name ?? '-'}</span> |
-    <span>단과대학: {selectedFaculty.college ?? '-'}</span> |
-    <span>학과: {selectedFaculty.department ?? '-'}</span> |
-    <span>직무유형: {selectedFaculty.job_type ?? '-'}</span> |
-    <span>직급: {selectedFaculty.job_rank ?? '-'}</span> |
-    <span>최종학위: {selectedFaculty.highest_degree ?? '-'}</span>
+    <!-- <span>{selectedFaculty.user_id}</span>  -->
+    <span>{selectedFaculty.name ?? '-'}</span> 
+    <span>{selectedFaculty.college ?? '-'}</span> 
+    <span>{selectedFaculty.department ?? '-'}</span> 
+    <span>{selectedFaculty.job_rank ?? '-'}</span> 
+    <span>{selectedFaculty.highest_degree ?? '-'}({selectedFaculty.highest_degree_year ?? '-'})</span>
   </div>
 {/if}
 
