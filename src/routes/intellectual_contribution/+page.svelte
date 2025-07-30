@@ -382,9 +382,7 @@
   {/if}
 </div>
 
-{#if filteredOutputs.length === 0 && selectedFaculty}
-  <p class="p-2 text-gray-500">해당 탭에 데이터가 없습니다.</p>
-{:else}
+
   <table class="w-full border-collapse border text-sm">
     <thead>
       <tr class="bg-gray-200">
@@ -397,6 +395,13 @@
       </tr>
     </thead>
     <tbody>
+    {#if filteredOutputs.length === 0 && selectedFaculty}
+      <tr>
+        <td colspan="6" class="border p-4 text-center text-gray-500">
+          해당 탭에 데이터가 없습니다.
+        </td>
+      </tr>
+    {:else}
       {#each filteredOutputs as output}
         <tr>
           <td class="border p-2">
@@ -508,9 +513,10 @@
           </td>
         </tr>
       {/each}
+    {/if}
     </tbody>
   </table>
-{/if}
+
 
 {#if facultyList.length > 0}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="facultyModalTitle">
