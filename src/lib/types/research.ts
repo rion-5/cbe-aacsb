@@ -46,4 +46,5 @@ export interface Faculty {
   job_type: string | null;
   job_rank: string | null;
   highest_degree: string | null;
+  highest_degree_year: number | null;
 }
