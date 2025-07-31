@@ -411,17 +411,14 @@
       {#each filteredOutputs as output}
         <tr>
           <td class="border p-2">
-            
-            {#if output.doi}
-              {output.english_title || output.title}
-              <a href={`https://doi.org/${output.doi}`} target="_blank" class="text-blue-500 hover:underline">
-               [DOI: {output.doi}]
-              </a>
-            {:else}
-              {output.english_title || output.title}
-            {/if}
+            {output.english_title || output.title}            
             {#if output.english_title && isKorean(output.title)}
               <span class="text-gray-500 text-sm"> ({output.title})</span>
+            {/if}
+            {#if output.doi}
+              <a href={`https://doi.org/${output.doi}`} target="_blank" class="text-blue-500 hover:underline">
+               <!-- [DOI: {output.doi}] -->[DOI]
+              </a>
             {/if}
             {#if isKorean(output.title)}
                 <button class="ml-2 text-blue-500 hover:text-blue-700" on:click={() => openEditPopup(output)} aria-label="add english title">
