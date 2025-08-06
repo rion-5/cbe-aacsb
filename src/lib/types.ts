@@ -1,3 +1,10 @@
+export interface AppSession {
+  user: {
+    id_no: string;
+    user_name: string;
+  } | null;
+}
+
 export interface ResearchOutput {
   research_id: number;
   fac_nip: string;
