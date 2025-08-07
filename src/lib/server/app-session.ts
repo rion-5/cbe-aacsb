@@ -77,7 +77,7 @@ export async function setSession(
       maxAge: 12 * 60 * 60, // access_token 만료 시간 (12시간)
     });
 
-    console.log('Session and access_token set for user:', user.id_no);
+    // console.log('Session and access_token set for user:', user.id_no);
   } catch (err) {
     console.error('setSession Error:', err);
     throw new Error('Failed to set session');

@@ -23,8 +23,8 @@
           // auth.set({ isLoggedIn: false, id_no: null, user_name: null });
           goto('/login');
         }
-      }, 2 * 60 * 1000); // 2분 경고 후 로그아웃
-    }, 18 * 60 * 1000); // 18분 후 경고
+      }, 5 * 60 * 1000); // 5분 경고 후 로그아웃
+    }, 120 * 60 * 1000); // 120분 후 경고
   }
 
 	async function extendSession() {
@@ -103,7 +103,7 @@
 
 {#if sessionWarning}
 	<div class="fixed top-4 left-1/2 -translate-x-1/2 rounded bg-gray-100 px-4 py-2 text-sm text-gray-700 shadow flex items-center space-x-4">
-		<p class="m-0">2분 후 자동 로그아웃 됩니다. </p>
+		<p class="m-0">5분 후 자동 로그아웃 됩니다. </p>
 		<button on:click={extendSession} class="bg-blue-500 text-white text-sm px-2 py-1 rounded">
 			로그인 연장
 		</button>
