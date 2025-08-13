@@ -3,11 +3,11 @@ module.exports = {
   apps: [
     {
       name: 'cbe-aacsb',
-      // script: 'build/index.js', // 또는 'build', 아래 참고
-      // cwd: './', // 프로젝트 루트 기준
-      // interpreter: 'node',
-      script: 'start',
-      interpreter: 'npm',
+      script: './build/index.js', // 또는 'build', 아래 참고
+      cwd: './', // 프로젝트 루트 기준
+      interpreter: 'node',
+      // script: 'start',
+      // interpreter: 'npm',
       env: {
         NODE_ENV: 'development',
         PORT: 5173
