@@ -1,7 +1,7 @@
 <!-- src/lib/components/SessionManager.svelte -->
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { auth, logout} from '$lib/stores/auth';
+	import { auth, logout } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 
@@ -17,10 +17,8 @@
       sessionWarning = true;
       setTimeout(() => {
         if (sessionWarning) {
-          // console.log('Session expired, logging out');
           sessionWarning = false;
           logout();
-          // auth.set({ isLoggedIn: false, id_no: null, user_name: null });
           goto('/login');
         }
       }, 5 * 60 * 1000); // 5분 경고 후 로그아웃
@@ -29,7 +27,6 @@
 
 	async function extendSession() {
     try {
-      // console.log('Extending session for user:', $auth.id_no);
       const response = await fetch('/api/auth/extend', {
         method: 'POST',
         credentials: 'include'
@@ -42,7 +39,6 @@
     } catch (err) {
       console.error('Session extension failed:', err);
       logout();
-      // auth.set({ isLoggedIn: false, id_no: null, user_name: null });
       goto('/login');
     }
   }
@@ -54,7 +50,6 @@
   async function verifyAuth() {
     isLoading = true;
     try {
-      // console.log('Verifying auth for path:', window.location.pathname);
       const response = await fetch('/api/auth/verify', {
         credentials: 'include'
       });
@@ -64,16 +59,16 @@
         throw new Error(errorData.message || '인증 실패');
       }
       const data = await response.json();
-      // console.log('Auth verified, user:', data.id_no);
       auth.set({
         isLoggedIn: true,
         id_no: data.id_no,
-        user_name: data.user_name
+        user_name: data.user_name,
+        isAdmin: data.isAdmin
       });
       startSessionTimer();
     } catch (err) {
       console.warn('Auth verification error:', err);
-      auth.set({ isLoggedIn: false, id_no: null, user_name: null });
+      auth.set({ isLoggedIn: false, id_no: null, user_name: null, isAdmin: false });
     } finally {
       isLoading = false;
     }
@@ -81,13 +76,11 @@
 
 	onMount(() => {
 		if (!browser) return;
-		// console.log('SessionManager mounted, isLoggedIn:', $auth.isLoggedIn, 'requiresAuth:', requiresAuth);
-
 		if ((requiresAuth && !$auth.isLoggedIn)) {
 			verifyAuth();
 		} else {
 			isLoading = false;
-			if (requiresAuth && $auth.id_no ) startSessionTimer();
+			if (requiresAuth && $auth.id_no) startSessionTimer();
 		}
 		['click', 'mousemove', 'keydown'].forEach((event) =>
 			window.addEventListener(event, resetSessionTimer)

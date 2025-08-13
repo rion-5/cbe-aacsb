@@ -6,12 +6,14 @@ interface AuthState {
   isLoggedIn: boolean;
   id_no: string | null;
   user_name: string | null;
+  isAdmin: boolean;
 }
 
 const initialState: AuthState = {
   isLoggedIn: false,
   id_no: null,
-  user_name: null
+  user_name: null,
+  isAdmin: false
 };
 
 if (browser) {
@@ -35,22 +37,16 @@ export async function logout() {
     if (!response.ok) {
       throw new Error('로그아웃 실패');
     }
-    auth.set({ isLoggedIn: false, id_no: null, user_name: null });
+    auth.set({ isLoggedIn: false, id_no: null, user_name: null, isAdmin: false });
     if (browser) {
       localStorage.removeItem('auth');
     }
   } catch (err) {
     console.error('로그아웃 에러:', err);
   } finally {
-    auth.set({ isLoggedIn: false, id_no: null, user_name: null });
+    auth.set({ isLoggedIn: false, id_no: null, user_name: null, isAdmin: false });
     if (browser) {
       localStorage.removeItem('auth');
     }
-    // // OAuth 인증 URL로 리다이렉트
-    // const clientId = import.meta.env.VITE_CLIENT_ID as string;
-    // const redirectUri = import.meta.env.VITE_REDIRECT_URI as string;
-    // const scope = '10';
-    // const authUrl = `https://api.hanyang.ac.kr/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}`;
-    // window.location.assign(authUrl);
   }
 }

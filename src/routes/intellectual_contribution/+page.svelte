@@ -1,13 +1,20 @@
 <!-- src/routes/intellcectual_contribution/+page.svlete -->
 <script lang="ts">
   import { onMount, afterUpdate } from 'svelte';
+  import { auth } from '$lib/stores/auth';
   import type { ResearchOutput, ResearchClassification, BooleanKeys, Faculty } from '$lib/types/research';
 
-  let searchQuery = '';
+  export let data: {
+    researchOutputs: (ResearchOutput & ResearchClassification)[];
+    selectedFaculty: Faculty | null;
+    facultyList: Faculty[];
+  };
+
+  let searchQuery = $auth.isAdmin ? '' : $auth.id_no || '';
   let selectedYear = '2025';
-  let researchOutputs: (ResearchOutput & ResearchClassification)[] = [];
-  let selectedFaculty: Faculty | null = null;
-  let facultyList: Faculty[] = [];
+  let researchOutputs: (ResearchOutput & ResearchClassification)[] = data.researchOutputs;
+  let selectedFaculty: Faculty | null = data.selectedFaculty;
+  let facultyList: Faculty[] = data.facultyList;
   let activeTab: string = '논문';
   let editingOutput: (ResearchOutput & ResearchClassification) | null = null;
   let editEnglishTitle = '';
@@ -50,29 +57,38 @@
     const date = new Date(isoDate);
     return date.toISOString().split('T')[0];
   }
+
   function formatDateKST(isoDate: string): string {
     const date = new Date(isoDate);
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth()는 0부터 시작
+    const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 
   async function fetchResearchOutputs() {
-    if (!searchQuery) {
+    if (!$auth.isLoggedIn) {
       researchOutputs = [];
       selectedFaculty = null;
       facultyList = [];
       return;
     }
 
-    const params = new URLSearchParams({ searchQuery });
+    const params = new URLSearchParams();
+    if ($auth.isAdmin) {
+      if (searchQuery) params.append('searchQuery', searchQuery);
+    } else {
+      params.append('searchQuery', $auth.id_no || '');
+    }
     if (selectedYear) params.append('year', selectedYear);
-    const response = await fetch(`/api/intellectual_contribution?${params}`);
+
+    const response = await fetch(`/api/intellectual_contribution?${params}`, {
+      credentials: 'include'
+    });
     if (response.ok) {
       const data = await response.json();
       if (data.facultyList) {
-        facultyList = data.facultyList;
+        facultyList = $auth.isAdmin ? data.facultyList : [];
         researchOutputs = [];
         selectedFaculty = null;
       } else {
@@ -89,6 +105,7 @@
   }
 
   function selectFaculty(faculty: Faculty) {
+    if (!$auth.isAdmin) return;
     selectedFaculty = faculty;
     searchQuery = faculty.user_id;
     facultyList = [];
@@ -314,22 +331,36 @@
   $: trapFocus(modifyDialogRef, !!modifyingOutput);
   $: trapFocus(deleteDialogRef, !!deletingOutput);
 
-  onMount(fetchResearchOutputs);
+  $: if ($auth.isAdmin) {
+    // 관리자는 검색 쿼리 변경 시 클라이언트에서 데이터를 다시 로드
+    fetchResearchOutputs();
+  }
 </script>
 
 <div class="mb-4">
   <h2 class="text-xl font-semibold">연구성과 조회</h2>
   <div class="mt-2 flex gap-4">
     <div>
-      <label for="searchQuery" class="mr-2">ID/성명:</label>
-      <input
-        id="searchQuery"
-        type="text"
-        bind:value={searchQuery}
-        on:input={fetchResearchOutputs}
-        class="border p-2 rounded"
-        placeholder="ID 또는 성명 입력"
-      />
+      {#if $auth.isAdmin}
+        <label for="searchQuery" class="mr-2">ID/성명:</label>
+        <input
+          id="searchQuery"
+          type="text"
+          bind:value={searchQuery}
+          on:input={fetchResearchOutputs}
+          class="border p-2 rounded"
+          placeholder="ID 또는 성명 입력"
+        />
+      {:else}
+        <label for="searchQuery" class="mr-2">ID:</label>
+        <input
+          id="searchQuery"
+          type="text"
+          value={$auth.id_no || ''}
+          disabled
+          class="border p-2 rounded bg-gray-100"
+        />
+      {/if}
     </div>
     <div>
       <label for="year" class="mr-2">연도:</label>
@@ -349,11 +380,10 @@
 
 {#if selectedFaculty}
   <div class="mb-4 bg-gray-100 p-3 rounded text-base text-gray-700">
-    <!-- <span>{selectedFaculty.user_id}</span>  -->
-    <span>{selectedFaculty.name ?? '-'}</span> 
-    <span>{selectedFaculty.college ?? '-'}</span> 
-    <span>{selectedFaculty.department ?? '-'}</span> 
-    <span>{selectedFaculty.job_rank ?? '-'}</span> 
+    <span>{selectedFaculty.name ?? '-'}</span>
+    <span>{selectedFaculty.college ?? '-'}</span>
+    <span>{selectedFaculty.department ?? '-'}</span>
+    <span>{selectedFaculty.job_rank ?? '-'}</span>
     <span>{selectedFaculty.highest_degree ?? '-'}({selectedFaculty.highest_degree_year ?? '-'})</span>
   </div>
 {/if}
@@ -388,20 +418,19 @@
   {/if}
 </div>
 
-
-  <table class="w-full border-collapse border text-sm">
-    <thead>
-      <tr class="bg-gray-200">
-        <th class="border p-2">Title</th>
-        <th class="border p-2 w-25 whitespace-normal break-words">Publication<br />Date</th>
-        <th class="border p-2 w-58 whitespace-normal break-words">Journal</th>
-        <th class="border p-2 w-50 whitespace-normal break-words">Portfolio of<br />Intellectual</th>
-        <th class="border p-2 w-50 whitespace-normal break-words">Types of Intellectual<br />Contributions</th>
-        <th class="border p-2 w-20">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-          {#if filteredOutputs.length === 0 && selectedFaculty}
+<table class="w-full border-collapse border text-sm">
+  <thead>
+    <tr class="bg-gray-200">
+      <th class="border p-2">Title</th>
+      <th class="border p-2 w-25 whitespace-normal break-words">Publication<br />Date</th>
+      <th class="border p-2 w-58 whitespace-normal break-words">Journal</th>
+      <th class="border p-2 w-50 whitespace-normal break-words">Portfolio of<br />Intellectual</th>
+      <th class="border p-2 w-50 whitespace-normal break-words">Types of Intellectual<br />Contributions</th>
+      <th class="border p-2 w-20">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {#if filteredOutputs.length === 0 && selectedFaculty}
       <tr>
         <td colspan="6" class="border p-4 text-center text-gray-500">
           해당 탭에 데이터가 없습니다.
@@ -411,17 +440,17 @@
       {#each filteredOutputs as output}
         <tr>
           <td class="border p-2">
-            {output.english_title || output.title}            
+            {output.english_title || output.title}
             {#if output.english_title && isKorean(output.title)}
               <span class="text-gray-500 text-sm"> ({output.title})</span>
             {/if}
             {#if output.doi}
               <a href={`https://doi.org/${output.doi}`} target="_blank" class="text-blue-500 hover:underline">
-               <!-- [DOI: {output.doi}] -->[DOI]
+                [DOI]
               </a>
             {/if}
             {#if isKorean(output.title)}
-                <button class="ml-2 text-blue-500 hover:text-blue-700" on:click={() => openEditPopup(output)} aria-label="add english title">
+              <button class="ml-2 text-blue-500 hover:text-blue-700" on:click={() => openEditPopup(output)} aria-label="add english title">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
@@ -517,16 +546,13 @@
           </td>
         </tr>
       {/each}
-      {/if}
-    </tbody>
-  </table>
+    {/if}
+  </tbody>
+</table>
 
-
-{#if facultyList.length > 0}
+{#if facultyList.length > 0 && $auth.isAdmin}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="facultyModalTitle">
-    <div bind:this={facultyDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-[600px]" on:keydown={e => e.key === 'Escape' && closeFacultyPopup()} tabindex="-1"
-                 role="dialog" 
-      aria-labelledby="facultyModalTitle">
+    <div bind:this={facultyDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-[600px]" on:keydown={e => e.key === 'Escape' && closeFacultyPopup()} tabindex="-1" role="dialog" aria-labelledby="facultyModalTitle">
       <h3 id="facultyModalTitle" class="text-lg font-semibold mb-4">동명이인 선택</h3>
       <table class="w-full border-collapse border text-sm">
         <thead>
@@ -577,9 +603,7 @@
 
 {#if editingOutput}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
-    <div bind:this={editDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeEditPopup()} tabindex="-1"
-                 role="dialog" 
-      aria-labelledby="editModalTitle" >
+    <div bind:this={editDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeEditPopup()} tabindex="-1" role="dialog" aria-labelledby="editModalTitle">
       <h3 id="editModalTitle" class="text-lg font-semibold mb-4">Edit English Title and Journal</h3>
       <div class="mb-4">
         <label for="editEnglishTitle" class="block mb-1">English Title:</label>
@@ -627,9 +651,7 @@
 
 {#if addingOutput}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
-    <div bind:this={addDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeAddPopup()} tabindex="-1"
-           role="dialog" 
-      aria-labelledby="addModalTitle" >
+    <div bind:this={addDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeAddPopup()} tabindex="-1" role="dialog" aria-labelledby="addModalTitle">
       <h3 id="addModalTitle" class="text-lg font-semibold mb-4">Add Research Output</h3>
       <div class="mb-4">
         <label for="addTitle" class="block mb-1">Title:</label>
@@ -680,9 +702,7 @@
 
 {#if modifyingOutput}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="modifyModalTitle">
-    <div bind:this={modifyDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeModifyPopup()} tabindex="-1"
-           role="dialog" 
-      aria-labelledby="modifyModalTitle" >
+    <div bind:this={modifyDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeModifyPopup()} tabindex="-1" role="dialog" aria-labelledby="modifyModalTitle">
       <h3 id="modifyModalTitle" class="text-lg font-semibold mb-4">Modify Research Output</h3>
       <div class="mb-4">
         <label for="modifyTitle" class="block mb-1">Title:</label>
@@ -733,9 +753,7 @@
 
 {#if deletingOutput}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
-    <div bind:this={deleteDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeDeletePopup()} tabindex="-1"
-     role="dialog" 
-      aria-labelledby="deleteModalTitle" >
+    <div bind:this={deleteDialogRef} class="bg-white p-6 rounded-lg shadow-lg w-96" on:keydown={e => e.key === 'Escape' && closeDeletePopup()} tabindex="-1" role="dialog" aria-labelledby="deleteModalTitle">
       <h3 id="deleteModalTitle" class="text-lg font-semibold mb-4">Delete Research Output</h3>
       <p class="mb-4">Are you sure you want to delete "{deletingOutput.title}"?</p>
       <div class="flex justify-end gap-2">

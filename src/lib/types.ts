@@ -1,7 +1,9 @@
+// src/lib/types.ts
 export interface AppSession {
   user: {
     id_no: string;
     user_name: string;
+    isAdmin: boolean;
   } | null;
 }
 

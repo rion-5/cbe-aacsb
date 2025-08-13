@@ -12,6 +12,7 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
   return json({
     id_no: appSession.user.id_no,
-    user_name: appSession.user.user_name
+    user_name: appSession.user.user_name,
+    isAdmin: appSession.user.isAdmin
   });
 };

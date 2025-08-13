@@ -5,13 +5,13 @@ import type { RequestHandler } from './$types';
 import { setSession } from '$lib/server/app-session';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
-    const { id_no, user_name , access_token } = await request.json();
-    if (!id_no || !user_name) {
-        return json({ error: 'id_no와 user_name이 필요합니다.' }, { status: 400 });
+    const { id_no, user_name, access_token, isAdmin } = await request.json();
+    if (!id_no || !user_name || isAdmin === undefined) {
+        return json({ error: 'id_no, user_name, isAdmin이 필요합니다.' }, { status: 400 });
     }
 
     try {
-        await setSession(cookies, { id_no, user_name,access_token });
+        await setSession(cookies, { id_no, user_name, access_token, isAdmin });
         return json({ success: true });
     } catch (err) {
         console.error('Session POST Error:', err);
