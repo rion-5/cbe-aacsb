@@ -57,11 +57,11 @@ export const load: PageServerLoad = async ({ url, fetch, cookies }) => {
     throw new Error('Invalid user info received');
   }
 
-  const daehakCd = userInfo.daehakCd;
+  // const daehakCd = userInfo.daehakCd;
   const userGb = userInfo.userGb;
-  if (daehakCd !== 'Y0000502') {
-    throw redirect(302, '/?error=invalid_college');
-  }
+  // if (daehakCd !== 'Y0000502') {
+  //   throw redirect(302, '/?error=invalid_college');
+  // }
 
   const allowedUserGbs = ['0010', '0020', '0030'];
   // 0010 교수 0020 강사  0030 직원  0110 재학생 0120 휴학생  0150 수료생  0180 학사취득유예
