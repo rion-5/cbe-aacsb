@@ -35,7 +35,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   // 로컬 및 배포 환경에 따라 허용된  Origin 설정
   const origin = event.request.headers.get('Origin') ?? '';
-  const allowedOrigins = ['http://127.0.0.1:5173'];
+  const allowedOrigins = ['http://127.0.0.1:5173', 'http://cbe-aacsb.hanyang.ac.kr'];
   const allowedOrigin = allowedOrigins.includes(origin) ? origin : '';
 
   if (event.request.method === 'OPTIONS') {
