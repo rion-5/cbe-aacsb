@@ -24,6 +24,7 @@
 	let editingOutput: (ResearchOutput & ResearchClassification) | null = null;
 	let editEnglishTitle = '';
 	let editEnglishJournal = '';
+  let editEnglishPublisher = '';
 	let addingOutput = false;
 	let modifyingOutput: (ResearchOutput & ResearchClassification) | null = null;
 	let deletingOutput: (ResearchOutput & ResearchClassification) | null = null;
@@ -173,6 +174,7 @@
 		editingOutput = output;
 		editEnglishTitle = output.english_title ?? '';
 		editEnglishJournal = output.english_journal ?? '';
+    editEnglishPublisher = output.english_publisher ?? '';
 	}
 
 	async function saveEdit() {
@@ -185,7 +187,8 @@
 				body: JSON.stringify({
 					research_id: editingOutput!.research_id,
 					english_title: editEnglishTitle || null,
-					english_journal: editEnglishJournal || null
+					english_journal: editEnglishJournal || null,
+          english_publisher: editEnglishPublisher || null
 				})
 			});
 			if (!response.ok) throw new Error('Failed to update');
@@ -194,7 +197,8 @@
 					? {
 							...r,
 							english_title: editEnglishTitle || null,
-							english_journal: editEnglishJournal || null
+							english_journal: editEnglishJournal || null,
+              english_publisher: editEnglishPublisher || null
 						}
 					: r
 			);
@@ -452,9 +456,10 @@
 		<tr class="bg-gray-200">
 			<th class="w-18 border p-2">Type</th>
 			<th class="border p-2">Title</th>
+			<th class="w-25 border p-2 break-words whitespace-normal">Journal</th>
 			<th class="w-25 border p-2">Publisher</th>
 			<th class="w-25 border p-2 break-words whitespace-normal">Publication<br />Date</th>
-			<th class="w-25 border p-2 break-words whitespace-normal">Journal</th>
+
 			<th class="w-50 border p-2 break-words whitespace-normal">Portfolio of<br />Intellectual</th>
 			<th class="w-50 border p-2 break-words whitespace-normal"
 				>Types of Intellectual<br />Contributions</th
@@ -504,14 +509,19 @@
 							</button>
 						{/if}
 					</td>
-					<td class="border p-2">{output.publisher || '-'}</td>
-					<td class="border p-2">{formatDateKST(output.published_at)}</td>
 					<td class="border p-2">
 						{output.english_journal || output.journal_name || '-'}
 						{#if output.english_journal && isKorean(output.journal_name ?? '')}
 							<span class="text-sm text-gray-500"> ({output.journal_name})</span>
 						{/if}
-					</td>
+					</td>          
+					<td class="border p-2">{output.english_publisher || output.publisher || '-'}
+            {#if output.english_publisher && isKorean(output.publisher ?? '')}
+              <span class="text-sm text-gray-500"> ({output.publisher})</span>
+            {/if}
+          </td>
+					<td class="border p-2">{formatDateKST(output.published_at)}</td>
+
 					<td class="border p-2">
 						<label class="mr-2 inline-flex items-center">
 							<input
@@ -688,7 +698,7 @@
 			role="dialog"
 			aria-labelledby="editModalTitle"
 		>
-			<h3 id="editModalTitle" class="mb-4 text-lg font-semibold">Edit English Title and Journal</h3>
+			<h3 id="editModalTitle" class="mb-4 text-lg font-semibold">Edit English Title, Journal and Publisher</h3>
 			<div class="mb-4">
 				<label for="editEnglishTitle" class="mb-1 block">English Title:</label>
 				<input
@@ -713,6 +723,19 @@
 				/>
 				{#if isKorean(editingOutput!.journal_name ?? '')}
 					<p class="mt-1 text-sm text-gray-500">Korean Journal: {editingOutput!.journal_name}</p>
+				{/if}
+			</div>
+			<div class="mb-4">
+				<label for="editEnglishPublisher" class="mb-1 block">English Publisher:</label>
+				<input
+					id="editEnglishPublisher"
+					type="text"
+					bind:value={editEnglishPublisher}
+					class="w-full rounded border p-2"
+					placeholder="Enter English Publisher"
+				/>
+				{#if isKorean(editingOutput!.publisher ?? '')}
+					<p class="mt-1 text-sm text-gray-500">Korean Publisher: {editingOutput!.publisher}</p>
 				{/if}
 			</div>
 			<div class="flex justify-end gap-2">

@@ -91,7 +91,7 @@ export const GET: RequestHandler = async ({ url }) => {
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    const { fac_nip, title, english_title, journal_name, english_journal, publisher, published_at, type } = await request.json();
+    const { fac_nip, title, english_title, journal_name, english_journal, publisher, english_publisher, published_at, type } = await request.json();
     if (!fac_nip || !title || !publisher || !published_at || !type) {
       return new Response(JSON.stringify({ error: 'fac_nip, title, publisher, published_at, type are required' }), { status: 400 });
     }
@@ -99,12 +99,12 @@ export const POST: RequestHandler = async ({ request }) => {
     const result = await query<ResearchOutput>(
       `
       INSERT INTO aacsb_research_outputs (
-        fac_nip, title, english_title, journal_name, english_journal, publisher, published_at, type, data_source,
+        fac_nip, title, english_title, journal_name, english_journal, publisher,english_publisher, published_at, type, data_source,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'manual', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *
       `,
-      [fac_nip, title, english_title || null, journal_name || null, english_journal || null, publisher, published_at, type]
+      [fac_nip, title, english_title || null, journal_name || null, english_journal || null, publisher || null, english_publisher || null, published_at, type]
     );
 
     return new Response(JSON.stringify(result[0]), {
@@ -119,7 +119,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 export const PATCH: RequestHandler = async ({ request }) => {
   try {
-    const { research_id, english_title, english_journal } = await request.json();
+    const { research_id, english_title, english_journal ,english_publisher } = await request.json();
     if (!research_id) {
       return new Response(JSON.stringify({ error: 'research_id is required' }), { status: 400 });
     }
@@ -134,6 +134,10 @@ export const PATCH: RequestHandler = async ({ request }) => {
     if (english_journal !== undefined) {
       updates.push(`english_journal = $${params.length + 1}`);
       params.push(english_journal);
+    }
+    if (english_publisher !== undefined) {
+      updates.push(`english_publisher = $${params.length + 1}`);
+      params.push(english_publisher);
     }
     if (updates.length === 0) {
       return new Response(JSON.stringify({ error: 'No fields to update' }), { status: 400 });

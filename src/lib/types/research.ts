@@ -11,6 +11,7 @@ export interface ResearchOutput {
   doi: string | null;
   published_at: string;
   publisher: string | null;
+  english_publisher: string | null;
   journal_name: string | null;
   english_journal: string | null;
   journal_index: string | null;
