@@ -1,0 +1,53 @@
+AACSB 연구성과 관리 API 명세서
+
+1. 교원정보 API
+  가. 설명 : 경상대학 소속의 현재 학기 재직중인 교강사 정보
+	나. 응답형식 (JSON 배열)
+  [
+   {
+		"user_id" : "A0?????",
+		"campus" : "ERICA",
+		"college" : "경상대학",
+		"department" : "보험계리학과",
+		"tenure_track" : "정년트랙",
+		"job_type" : "전임교원",
+		"job_rank" : "교수",
+		"name" : "최양호",
+		"english_name" : "Choi, Yang Ho",
+		"highest_degree" : "박사",
+		"employment_status" : "재직",
+		"email" : "ychoi@hanyang.ac.kr",
+		"bachelor_degree_year" : 1997,
+		"master_degree_year" : 2005,
+		"doctoral_degree_year" : 2007
+	 }
+	]
+	
+	
+2. 연구성과 API
+  가. 설명: 경상대학 소속 교원의 연구성과 목록
+  나. 응답형식 (JSON 배열)
+  [
+   {
+		"research_id" : 20244005010,
+		"user_id" : "A0?????",
+		"name" : "공태식",
+		"title" : "Bridging the gap: Exploring the nexus of service robot personalization, customer identification, and citizenship behaviors",
+		"english_title" : null,
+		"doi" : "10.1016\/j.jretconser.2024.104105",
+		"published_at" : "2024-10-04",
+		"publisher" : "ELSEVIER SCI LTD",
+		"english_publisher" : null,
+		"journal_name" : "JOURNAL OF RETAILING AND CONSUMER SERVICES",
+		"english_journal" : null,
+		"journal_index" : "SSCI",
+		"type" : "논문",
+		"journal_category" : "연구",
+		"impact_factor" : 10.400,
+		"is_q1_last3years" : true,
+		"is_peer_reviewed" : null,
+		"role" : "제1저자",
+		"is_domestic" : false,
+
+	 }
+	]
