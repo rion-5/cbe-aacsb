@@ -1,5 +1,5 @@
 // scripts/importResearchOutput.ts
-// 제외 조건: 업적구분='연구비수혜'이고 publisher에 '한양대학교' 포함
+// 제외 조건: 업적구분='연구비수혜'이고 publisher에 '한양대학교' 포함하는 경우
 import 'dotenv/config';
 import xlsx from 'xlsx';
 import { query } from '../src/lib/server/db';

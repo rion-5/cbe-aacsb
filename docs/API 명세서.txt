@@ -2,7 +2,7 @@ AACSB 연구성과 관리 API 명세서
 
 1. 교원정보 API
   가. 설명 : 경상대학 소속의 현재 학기 재직중인 교강사 정보
-	나. 응답형식 (JSON 배열)
+  나. 응답형식 (JSON 배열)
   [
    {
 		"user_id" : "A0?????",
@@ -12,18 +12,38 @@ AACSB 연구성과 관리 API 명세서
 		"tenure_track" : "정년트랙",
 		"job_type" : "전임교원",
 		"job_rank" : "교수",
-		"name" : "최양호",
+		"name" : "홍길동",
 		"english_name" : "Choi, Yang Ho",
 		"highest_degree" : "박사",
 		"employment_status" : "재직",
 		"email" : "ychoi@hanyang.ac.kr",
 		"bachelor_degree_year" : 1997,
 		"master_degree_year" : 2005,
-		"doctoral_degree_year" : 2007
+		"doctoral_degree_year" : 2007,
+    "created_at" : "2025-09-02 08:48:01.919",
+    "updated_at" : "2025-09-02 08:48:01.919"
 	 }
 	]
 	
-	
+  다. 관련 교내정보 메뉴 : 교원조회및인사카드출력 (엑셀기준)
+  	개인번호 -> user_id
+		캠퍼스 -> campus
+		대학 -> college
+		학과 -> department
+		정년트랙구분 -> tenure_rack
+		직종 -> job_type
+		직급 -> job_rank
+		성명 -> name
+		영문성명 -> english_name
+		최종학위 -> highest_degree
+		재직구분 -> employment_status
+		이메일 -> email
+		학사학위취득년도 -> bachelor_degree_year
+		석사학위취득년도 -> master_degree_year
+		박사학위취득년도 -> doctoral_degree_year
+  
+	라. 제외조건 : 직종 === 장학조교, 대학 !== 경상대학
+
 2. 연구성과 API
   가. 설명: 경상대학 소속 교원의 연구성과 목록
   나. 응답형식 (JSON 배열)
@@ -31,23 +51,41 @@ AACSB 연구성과 관리 API 명세서
    {
 		"research_id" : 20244005010,
 		"user_id" : "A0?????",
-		"name" : "공태식",
-		"title" : "Bridging the gap: Exploring the nexus of service robot personalization, customer identification, and citizenship behaviors",
-		"english_title" : null,
+		"name" : "홍길동",
+		"title" : "Bridging the gap: Exploring the nexus of service robot personalization",
 		"doi" : "10.1016\/j.jretconser.2024.104105",
 		"published_at" : "2024-10-04",
 		"publisher" : "ELSEVIER SCI LTD",
-		"english_publisher" : null,
 		"journal_name" : "JOURNAL OF RETAILING AND CONSUMER SERVICES",
-		"english_journal" : null,
 		"journal_index" : "SSCI",
 		"type" : "논문",
 		"journal_category" : "연구",
 		"impact_factor" : 10.400,
 		"is_q1_last3years" : true,
-		"is_peer_reviewed" : null,
 		"role" : "제1저자",
 		"is_domestic" : false,
-
+    "created_at" : "2025-09-02 08:48:01.919",
+    "updated_at" : "2025-09-02 08:48:01.919"
 	 }
 	]
+
+  다. 관련 교내정보 메뉴 : 연구실적관리
+  	연구실적번호 -> research_id
+		개인번호 -> user_id
+		성명 -> name
+		논문제목 -> title
+		doi(논문아이디) -> doi
+		발표일 -> published_at
+		발행기관/주관부서 -> publisher
+		학술지명 -> journal_name
+		index -> journal_index
+		업적구분 -> type
+		구분(논문/저서) -> journal_category
+		if -> impact_factor
+		최근3년q1여부 -> is_q1_last3years  : boolean으로 변환 (true/false)
+		참여형태 -> role
+		국외국내 -> is_domestic   : boolean으로 변환 (true/false)
+		최초입력일 -> created_at
+		최종수정일 -> updated_at
+	
+	라. 제외 조건: 업적구분='연구비수혜'이고 발행기관/주관부에 '한양대학교'를 포함하는 경우는 제외
