@@ -79,8 +79,8 @@ async function syncToDb(data: FacultyData[]) {
 		const bachelor_degree_year = parseYear(row.bachelorDegreeYear);
 		const master_degree_year = parseYear(row.masterDegreeYear);
 		const doctoral_degree_year = parseYear(row.doctoralDegreeYear);
-		const source_created_at = parseTimestamp(row.createdAt); // 소스 데이터의 created_at
-		const source_updated_at = parseTimestamp(row.updatedAt); // 소스 데이터의 updated_at
+		const source_created_at = parseTimestamp(row.createdAt);
+		const source_updated_at = parseTimestamp(row.updatedAt);
 
 		if (!user_id || !name) {
 			console.warn(`⚠️ 필수값 누락: user_id=${user_id || 'N/A'}, name=${name || 'N/A'}`);
@@ -101,12 +101,13 @@ async function syncToDb(data: FacultyData[]) {
 
 		try {
 			// 기존 데이터 확인
-			const existing = await query(
-				`SELECT created_at, updated_at FROM aacsb_faculty WHERE user_id = $1`,
-				[user_id]
-			);
+			const existing = await query(`SELECT updated_at FROM aacsb_faculty WHERE user_id = $1`, [
+				user_id
+			]);
 
-			const now = new Date().toISOString(); // 현재 시간 (ISO 형식, PostgreSQL과 호환)
+			// const now = new Date().toISOString(); // 현재 시간 (ISO 형식, PostgreSQL 호환)
+			const now = new Date();
+
 			let queryText: string;
 			let queryParams: any[];
 
@@ -139,51 +140,61 @@ async function syncToDb(data: FacultyData[]) {
 					now // created_at, updated_at 모두 now
 				];
 			} else {
-				// 기존 데이터 갱신: created_at은 유지, updated_at만 현재 시간
-				queryText = `
-          UPDATE aacsb_faculty SET
-            campus = $2,
-            college = $3,
-            department = $4,
-            tenure_track = $5,
-            job_type = $6,
-            job_rank = $7,
-            name = $8,
-            english_name = $9,
-            highest_degree = $10,
-            employment_status = $11,
-            email = $12,
-            bachelor_degree_year = $13,
-            master_degree_year = $14,
-            doctoral_degree_year = $15,
-            data_source = 'API',
-            updated_at = $16
-          WHERE user_id = $1
-          RETURNING user_id`;
-				queryParams = [
-					user_id,
-					campus,
-					college,
-					department,
-					tenure_track,
-					job_type,
-					job_rank,
-					name,
-					english_name,
-					highest_degree,
-					employment_status,
-					email,
-					bachelor_degree_year,
-					master_degree_year,
-					doctoral_degree_year,
-					now // updated_at만 now
-				];
+				// 기존 데이터 존재: updated_at 비교
+				const target_updated_at = new Date(existing[0].updated_at);
+				const source_updated_at_date = new Date(source_updated_at);
+
+				if (source_updated_at_date > target_updated_at) {
+					// 소스 데이터가 더 최신인 경우 업데이트
+					queryText = `
+            UPDATE aacsb_faculty SET
+              campus = $2,
+              college = $3,
+              department = $4,
+              tenure_track = $5,
+              job_type = $6,
+              job_rank = $7,
+              name = $8,
+              english_name = $9,
+              highest_degree = $10,
+              employment_status = $11,
+              email = $12,
+              bachelor_degree_year = $13,
+              master_degree_year = $14,
+              doctoral_degree_year = $15,
+              data_source = 'API',
+              updated_at = $16
+            WHERE user_id = $1
+            RETURNING user_id`;
+					queryParams = [
+						user_id,
+						campus,
+						college,
+						department,
+						tenure_track,
+						job_type,
+						job_rank,
+						name,
+						english_name,
+						highest_degree,
+						employment_status,
+						email,
+						bachelor_degree_year,
+						master_degree_year,
+						doctoral_degree_year,
+						now // updated_at만 now
+					];
+				} else {
+					console.log(
+						`ℹ️ 최신 데이터 없음: user_id=${user_id}, name=${name}, source_updated_at=${source_updated_at}, target_updated_at=${target_updated_at}`
+					);
+					continue; // 최신 데이터가 아니면 스킵
+				}
 			}
 
 			const result = await query(queryText, queryParams);
-			console.log(
-				`✅ 쿼리 실행 결과: user_id=${user_id}, affected_rows=${(result as any).rowCount}`
-			);
+			console.log(`✅ 쿼리 실행 결과: user_id=${user_id}`);
+			// console.log(`✅ 쿼리 실행 결과: user_id=${user_id}, affected_rows=${result.rowCount}`);
 		} catch (err) {
 			console.error(`❌ 쿼리 실행 실패: user_id=${user_id}, name=${name}`, err);
 		}
