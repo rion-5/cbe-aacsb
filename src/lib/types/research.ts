@@ -24,6 +24,7 @@ export interface ResearchOutput {
   is_domestic: boolean | null;
   created_at: string;
   updated_at: string;
+  is_aacsb_managed: boolean; // 추가
 }
 
 export interface ResearchClassification {

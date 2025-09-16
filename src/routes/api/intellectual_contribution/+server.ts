@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ({ url }) => {
     const facultyList = await query<Faculty>(
       `
       SELECT user_id, name, college, department, job_type, job_rank, highest_degree,
-        CASE 
+        CASE
           WHEN highest_degree = '학사' THEN bachelor_degree_year
           WHEN highest_degree = '석사' THEN master_degree_year
           WHEN highest_degree = '박사' THEN doctoral_degree_year
@@ -42,7 +42,7 @@ export const GET: RequestHandler = async ({ url }) => {
     const params: (string | number)[] = [fac_nip];
     let conditions = ['ro.fac_nip = $1'];
 
-    if (year && ['2019', '2020', '2021','2022','2023', '2024', '2025'].includes(year)) {
+    if (year && ['2019', '2020', '2021', '2022', '2023', '2024', '2025'].includes(year)) {
       conditions.push('EXTRACT(YEAR FROM ro.published_at) = $' + (params.length + 1));
       params.push(Number(year));
     }
@@ -51,8 +51,8 @@ export const GET: RequestHandler = async ({ url }) => {
 
     const researchOutputs = await query<(ResearchOutput & ResearchClassification)>(
       `
-      SELECT 
-        ro.*, 
+      SELECT
+        ro.*,
         COALESCE(rc.is_basic, FALSE) as is_basic,
         COALESCE(rc.is_applied, FALSE) as is_applied,
         COALESCE(rc.is_teaching, FALSE) as is_teaching,
@@ -62,8 +62,8 @@ export const GET: RequestHandler = async ({ url }) => {
         COALESCE(rc.created_at, CURRENT_TIMESTAMP) as created_at,
         COALESCE(rc.updated_at, CURRENT_TIMESTAMP) as updated_at
       FROM aacsb_research_outputs ro
-      LEFT JOIN aacsb_research_classifications rc 
-        ON ro.research_id = rc.research_id 
+      LEFT JOIN aacsb_research_classifications rc
+        ON ro.research_id = rc.research_id
         AND ro.fac_nip = rc.fac_nip
       ${whereClause}
       ORDER BY CASE ro.type
@@ -72,8 +72,8 @@ export const GET: RequestHandler = async ({ url }) => {
                 WHEN '학술발표' THEN 3
                 WHEN '연구비수혜' THEN 4
                 WHEN '기타' THEN 5
-                ELSE 6  -- 예상하지 못한 값들은 마지막에
-               END ,
+                ELSE 6
+               END,
                ro.published_at DESC
       `,
       params
@@ -92,6 +92,7 @@ export const GET: RequestHandler = async ({ url }) => {
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const { fac_nip, title, english_title, journal_name, english_journal, publisher, english_publisher, published_at, type } = await request.json();
+
     if (!fac_nip || !title || !publisher || !published_at || !type) {
       return new Response(JSON.stringify({ error: 'fac_nip, title, publisher, published_at, type are required' }), { status: 400 });
     }
@@ -99,9 +100,9 @@ export const POST: RequestHandler = async ({ request }) => {
     const result = await query<ResearchOutput>(
       `
       INSERT INTO aacsb_research_outputs (
-        fac_nip, title, english_title, journal_name, english_journal, publisher,english_publisher, published_at, type, data_source,
-        created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        fac_nip, title, english_title, journal_name, english_journal, publisher, english_publisher,
+        published_at, type, data_source, is_aacsb_managed, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *
       `,
       [fac_nip, title, english_title || null, journal_name || null, english_journal || null, publisher || null, english_publisher || null, published_at, type]
@@ -119,14 +120,15 @@ export const POST: RequestHandler = async ({ request }) => {
 
 export const PATCH: RequestHandler = async ({ request }) => {
   try {
-    const { research_id, english_title, english_journal ,english_publisher } = await request.json();
+    const { research_id, english_title, english_journal, english_publisher, is_aacsb_managed } = await request.json();
+
     if (!research_id) {
       return new Response(JSON.stringify({ error: 'research_id is required' }), { status: 400 });
     }
 
-
-    const params: (string | number | null)[] = [research_id];
+    const params: (string | number | boolean | null)[] = [research_id];
     const updates: string[] = [];
+
     if (english_title !== undefined) {
       updates.push(`english_title = $${params.length + 1}`);
       params.push(english_title);
@@ -139,10 +141,15 @@ export const PATCH: RequestHandler = async ({ request }) => {
       updates.push(`english_publisher = $${params.length + 1}`);
       params.push(english_publisher);
     }
+    if (is_aacsb_managed !== undefined) {
+      updates.push(`is_aacsb_managed = $${params.length + 1}`);
+      params.push(is_aacsb_managed);
+    }
+
     if (updates.length === 0) {
       return new Response(JSON.stringify({ error: 'No fields to update' }), { status: 400 });
     }
-    console.log(params);
+
     const result = await query<ResearchOutput>(
       `
       UPDATE aacsb_research_outputs
@@ -170,6 +177,7 @@ export const PATCH: RequestHandler = async ({ request }) => {
 export const PUT: RequestHandler = async ({ request }) => {
   try {
     const { research_id, title, journal_name, publisher, published_at } = await request.json();
+
     if (!research_id || !title || !publisher || !published_at) {
       return new Response(JSON.stringify({ error: 'research_id, title, publisher, published_at are required' }), { status: 400 });
     }
@@ -178,9 +186,11 @@ export const PUT: RequestHandler = async ({ request }) => {
       `SELECT data_source FROM aacsb_research_outputs WHERE research_id = $1`,
       [research_id]
     );
+
     if (research.length === 0) {
       return new Response(JSON.stringify({ error: 'Research record not found' }), { status: 404 });
     }
+
     if (research[0].data_source !== 'manual') {
       return new Response(JSON.stringify({ error: 'Only manual data can be updated' }), { status: 403 });
     }
@@ -212,6 +222,7 @@ export const PUT: RequestHandler = async ({ request }) => {
 export const DELETE: RequestHandler = async ({ request }) => {
   try {
     const { research_id } = await request.json();
+
     if (!research_id) {
       return new Response(JSON.stringify({ error: 'research_id is required' }), { status: 400 });
     }
@@ -220,9 +231,11 @@ export const DELETE: RequestHandler = async ({ request }) => {
       `SELECT data_source FROM aacsb_research_outputs WHERE research_id = $1`,
       [research_id]
     );
+
     if (research.length === 0) {
       return new Response(JSON.stringify({ error: 'Research record not found' }), { status: 404 });
     }
+
     if (research[0].data_source !== 'manual') {
       return new Response(JSON.stringify({ error: 'Only manual data can be deleted' }), { status: 403 });
     }
