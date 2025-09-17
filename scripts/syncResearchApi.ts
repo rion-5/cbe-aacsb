@@ -112,9 +112,9 @@ async function syncToDb(data: ResearchData[]) {
 		}
 
 		// 외래 키(fac_nip) 확인
-		const facultyExists = await query(`SELECT fac_nip FROM faculty WHERE fac_nip = $1`, [fac_nip]);
+		const facultyExists = await query(`SELECT user_id FROM aacsb_faculty WHERE user_id = $1`, [fac_nip]);
 		if (facultyExists.length === 0) {
-			console.warn(`⚠️ 외래 키 위반: fac_nip=${fac_nip}이 faculty 테이블에 존재하지 않음`);
+			console.warn(`⚠️ 외래 키 위반: fac_nip=${fac_nip}이 aacsb_faculty 테이블에 존재하지 않음`);
 			continue;
 		}
 
