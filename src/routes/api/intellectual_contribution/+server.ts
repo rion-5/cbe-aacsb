@@ -91,21 +91,21 @@ export const GET: RequestHandler = async ({ url }) => {
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
-    const { fac_nip, title, english_title, journal_name, english_journal, publisher, english_publisher, published_at, type } = await request.json();
+    const { fac_nip, title, english_title, journal_name, english_journal, publisher, english_publisher, published_at, type, name } = await request.json();
 
-    if (!fac_nip || !title || !publisher || !published_at || !type) {
-      return new Response(JSON.stringify({ error: 'fac_nip, title, publisher, published_at, type are required' }), { status: 400 });
+    if (!fac_nip || !title || !publisher || !published_at || !type || !name) {
+      return new Response(JSON.stringify({ error: 'fac_nip, title, publisher, published_at, type, name are required' }), { status: 400 });
     }
 
     const result = await query<ResearchOutput>(
       `
       INSERT INTO aacsb_research_outputs (
         fac_nip, title, english_title, journal_name, english_journal, publisher, english_publisher,
-        published_at, type, data_source, is_aacsb_managed, created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        published_at, type, data_source, is_aacsb_managed, name, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'manual', TRUE, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING *
       `,
-      [fac_nip, title, english_title || null, journal_name || null, english_journal || null, publisher || null, english_publisher || null, published_at, type]
+      [fac_nip, title, english_title || null, journal_name || null, english_journal || null, publisher || null, english_publisher || null, published_at, type, name]
     );
 
     return new Response(JSON.stringify(result[0]), {
@@ -176,10 +176,10 @@ export const PATCH: RequestHandler = async ({ request }) => {
 
 export const PUT: RequestHandler = async ({ request }) => {
   try {
-    const { research_id, title, journal_name, publisher, published_at } = await request.json();
+    const { research_id, title, journal_name, publisher, published_at, type, name } = await request.json();
 
-    if (!research_id || !title || !publisher || !published_at) {
-      return new Response(JSON.stringify({ error: 'research_id, title, publisher, published_at are required' }), { status: 400 });
+    if (!research_id || !title || !publisher || !published_at || !type || !name) {
+      return new Response(JSON.stringify({ error: 'research_id, title, publisher, published_at, type, name are required' }), { status: 400 });
     }
 
     const research = await query<ResearchOutput>(
@@ -198,11 +198,11 @@ export const PUT: RequestHandler = async ({ request }) => {
     const result = await query<ResearchOutput>(
       `
       UPDATE aacsb_research_outputs
-      SET title = $2, journal_name = $3, publisher = $4, published_at = $5, updated_at = CURRENT_TIMESTAMP
+      SET title = $2, journal_name = $3, publisher = $4, published_at = $5, type = $6, name = $7, updated_at = CURRENT_TIMESTAMP
       WHERE research_id = $1
       RETURNING *
       `,
-      [research_id, title, journal_name || null, publisher, published_at]
+      [research_id, title, journal_name || null, publisher, published_at, type, name]
     );
 
     if (result.length === 0) {

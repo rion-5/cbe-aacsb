@@ -11,7 +11,7 @@
   };
 
   let searchQuery = $auth.isAdmin ? '' : $auth.id_no || '';
-  let selectedYear = '2025';
+  let selectedYear = new Date().getFullYear().toString();
   let researchOutputs: (ResearchOutput & ResearchClassification)[] = data.researchOutputs;
   let selectedFaculty: Faculty | null = data.selectedFaculty;
   let facultyList: Faculty[] = data.facultyList;
@@ -36,6 +36,11 @@
   let addDialogRef: HTMLDivElement | null = null;
   let modifyDialogRef: HTMLDivElement | null = null;
   let deleteDialogRef: HTMLDivElement | null = null;
+  let addType = '논문';
+  let modifyType = '';
+
+	let helpDialogRef: HTMLDivElement | null = null;
+  let showHelp = false;
 
   const getTypeLabel = (type: string | null | undefined) => {
     if (!type) return '';
@@ -230,7 +235,8 @@
           journal_name: addJournalName || null,
           publisher: addPublisher,
           published_at: addPublishedAt,
-          type: activeTab
+          type: addType,
+          name: selectedFaculty.name
         })
       });
       if (!response.ok) throw new Error('Failed to add');
@@ -244,7 +250,7 @@
           is_peer_journal: false,
           is_other_reviewed: false,
           is_other_nonreviewed: false,
-          is_aacsb_managed: true // 신규 추가 시 기본값 true
+          is_aacsb_managed: true
         },
         ...researchOutputs
       ];
@@ -261,10 +267,11 @@
     modifyJournalName = output.journal_name ?? '';
     modifyPublisher = output.publisher ?? '';
     modifyPublishedAt = output.published_at;
+    modifyType = output.type ?? '논문';
   }
 
   async function saveModify() {
-    if (!modifyingOutput) return;
+    if (!modifyingOutput || !selectedFaculty) return;
     try {
       const response = await fetch('/api/intellectual_contribution', {
         method: 'PUT',
@@ -274,7 +281,9 @@
           title: modifyTitle,
           journal_name: modifyJournalName || null,
           publisher: modifyPublisher || null,
-          published_at: modifyPublishedAt
+          published_at: modifyPublishedAt,
+          type: modifyType,
+          name: selectedFaculty.name
         })
       });
       if (!response.ok) throw new Error('Failed to update');
@@ -365,11 +374,32 @@
   $: if ($auth.isAdmin) {
     fetchResearchOutputs();
   }
+
+	function closeHelpPopup() {
+    showHelp = false;
+  }
+
+  $: trapFocus(helpDialogRef, showHelp);
 </script>
 
 <div class="mb-4">
+<div class="mb-4 flex items-center justify-between">
   <h2 class="text-xl font-semibold">연구성과 조회</h2>
-  <div class="mt-2 flex gap-4">
+  <button
+    class="rounded bg-blue-500 p-2 text-white hover:bg-blue-600"
+    on:click={() => (showHelp = true)}
+    aria-label="Show help"
+  >
+    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M13 16h-1v-4h-1m1-4h.01M12 3a9 9 0 100 18 9 9 0 000-18z"
+      />
+    </svg>
+  </button>
+</div>  <div class="mt-2 flex gap-4">
     <div>
       {#if $auth.isAdmin}
         <label for="searchQuery" class="mr-2">ID/성명:</label>
@@ -394,7 +424,7 @@
     </div>
     <div>
       <label for="year" class="mr-2">연도:</label>
-      {#each ['2019', '2020', '2021', '2022', '2023', '2024', '2025'] as year}
+      {#each Array.from({ length: 5 }, (_, i) => (new Date().getFullYear() - i).toString()).reverse() as year}
         <button
           class:bg-blue-500={selectedYear === year}
           class:bg-gray-200={selectedYear !== year}
@@ -758,6 +788,18 @@
     >
       <h3 id="addModalTitle" class="mb-4 text-lg font-semibold">Add Research Output</h3>
       <div class="mb-4">
+        <label for="addType" class="mb-1 block">Type:</label>
+        <select
+          id="addType"
+          bind:value={addType}
+          class="w-full rounded border p-2"
+        >
+          {#each Object.entries({ 논문: '논문', 저서: '저서', 학술발표: '학술활동', 연구비수혜: '연구비', 기타: '기타' }) as [value, label]}
+            <option value={value}>{label}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="mb-4">
         <label for="addTitle" class="mb-1 block">Title:</label>
         <input
           id="addTitle"
@@ -827,6 +869,18 @@
       aria-labelledby="modifyModalTitle"
     >
       <h3 id="modifyModalTitle" class="mb-4 text-lg font-semibold">Modify Research Output</h3>
+      <div class="mb-4">
+        <label for="modifyType" class="mb-1 block">Type:</label>
+        <select
+          id="modifyType"
+          bind:value={modifyType}
+          class="w-full rounded border p-2"
+        >
+          {#each Object.entries({ 논문: '논문', 저서: '저서', 학술발표: '학술활동', 연구비수혜: '연구비', 기타: '기타' }) as [value, label]}
+            <option value={value}>{label}</option>
+          {/each}
+        </select>
+      </div>
       <div class="mb-4">
         <label for="modifyTitle" class="mb-1 block">Title:</label>
         <input
@@ -907,6 +961,52 @@
           on:click={confirmDelete}
         >
           Delete
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+{#if showHelp}
+  <div
+    class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="helpModalTitle"
+  >
+    <div
+      bind:this={helpDialogRef}
+      class="w-200 rounded-lg bg-white p-6 shadow-lg"
+      on:keydown={(e) => e.key === 'Escape' && closeHelpPopup()}
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="helpModalTitle"
+    >
+      <h3 id="helpModalTitle" class="mb-4 text-lg font-semibold">도움말</h3>
+      <p class="mb-4">
+        이 화면은 AACSB 유지에 필요한 연구성과 데이터를 수집하여 개인별 CV(Curriculum Vitae) 출력용으로 사용됩니다.<br>
+        - <strong>조회된 내용</strong>: 포털에 입력된 연구업적 자료입니다. AACSB에 필요하지 않은 경우, Type 열의 체크박스를 해제하여 제외할 수 있습니다.<br>
+        - <strong>영문정보 추가</strong>: 한글 자료일 경우 Title 끝에 있는 ✎ 를 눌러서 영문정보를 추가할 수 있습니다.<br>
+        - <strong>추가/수정/삭제</strong>: 업적평가 대상 자료는 아니지만 AACSB에 필요한 자료는, Actions 열에서 추가('+'), 수정(✎), 삭제(–)가 가능합니다. 수동 입력 데이터만 수정/삭제 가능합니다.<br>
+        - <strong>분류 선택</strong>: 각 연구성과는 아래의 Portfolio of Intellectual Contributions와 Types of Intellectual Contributions에서 각각 하나씩 반드시 선택해야 합니다.
+      </p>
+      <h4 class="mb-2 font-semibold">Portfolio of Intellectual Contributions</h4>
+      <ul class="mb-4 list-disc pl-5 text-sm">
+        <li><strong>Basic or Discovery Scholarship (기초·발견형 학문연구)</strong>: 새로운 지식, 이론, 개념을 창출. 예: SCI/SSCI 논문, 새로운 통계모형 개발, 새로운 개념 틀 제안.</li>
+        <li><strong>Applied or Integration/Application Scholarship (응용·통합형 연구)</strong>: 기존 지식을 실제 문제 해결에 적용하거나 학문 통합. 예: 기업 문제 해결 연구, 정책 제안, 융합 연구.</li>
+        <li><strong>Teaching and Learning Scholarship (교육·학습 중심 연구)</strong>: 교육 방법 및 학습 효과 개선. 예: 플립러닝 효과 분석, 교재 개발, 교육 평가 방법 개선.</li>
+      </ul>
+      <h4 class="mb-2 font-semibold">Types of Intellectual Contributions</h4>
+      <ul class="mb-4 list-disc pl-5 text-sm">
+        <li><strong>Peer-reviewed Journal Articles (동료 심사 학술지 논문)</strong>: 동료 심사를 거친 학술지 논문. 예: SSCI/Scopus 논문, 국내 등재지 논문.</li>
+        <li><strong>Additional Peer- or Editorial-Reviewed Intellectual Contributions (추가 동료/편집 심사 지적 기여)</strong>: 동료/편집 심사를 거친 기여. 예: 학술대회 논문집, 편집 심사 챕터, 정책 보고서.</li>
+        <li><strong>All Other Intellectual Contributions (기타 지적 기여)</strong>: 심사 여부와 관계없는 학문/교육/실무 기여. 예: 사례 연구, 세미나 발표, 교과서, 온라인 교육 콘텐츠.</li>
+      </ul>
+      <div class="flex justify-end">
+        <button
+          class="rounded bg-gray-300 px-4 py-2 hover:bg-gray-400"
+          on:click={closeHelpPopup}
+        >
+          닫기
         </button>
       </div>
     </div>
