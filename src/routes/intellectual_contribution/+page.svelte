@@ -467,7 +467,7 @@
 <table class="w-full border-collapse border text-sm">
   <thead>
     <tr class="bg-gray-200">
-      <th class="w-22 border p-2">Type</th>
+      <th class="w-23 border p-2">Type</th>
       <th class="border p-2">Title</th>
       <th class="w-25 border p-2 break-words whitespace-normal">Journal</th>
       <th class="w-25 border p-2">Publisher</th>
