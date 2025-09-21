@@ -49,7 +49,8 @@ export const GET: RequestHandler = async () => {
               WHEN '강사' THEN 9
               WHEN 'Teaching Fellow' THEN 10
               ELSE 11
-          END
+          END,
+          highest_degree_year
       `
     );
     return json(results);
