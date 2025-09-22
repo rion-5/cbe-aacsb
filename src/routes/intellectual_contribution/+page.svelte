@@ -439,7 +439,7 @@
 		</div>
 		<div>
 			<label for="year" class="mr-2">연도:</label>
-			{#each Array.from( { length: 5 }, (_, i) => (new Date().getFullYear() - i).toString() ).reverse() as year}
+			{#each years as year}
 				<button
 					class:bg-blue-500={selectedYear === year}
 					class:bg-gray-200={selectedYear !== year}
