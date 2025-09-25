@@ -52,6 +52,10 @@
 	let helpDialogRef: HTMLDivElement | null = null;
 	let showHelp = false;
 
+	// 추가: 로딩 상태 및 AbortController
+	let loading = false;
+	let abortController: AbortController | null = null;
+
 	const getTypeLabel = (type: string | null | undefined) => {
 		if (!type) return '';
 		const typeLabels: Record<string, string> = {
@@ -81,42 +85,75 @@
 		return `${year}-${month}-${day}`;
 	}
 
+	// fetchResearchOutputs 수정
 	async function fetchResearchOutputs() {
-		if (!$auth.isLoggedIn) {
-			researchOutputs = [];
-			selectedFaculty = null;
-			facultyList = [];
+		if (!$auth.isLoggedIn || loading) {
 			return;
 		}
-		const params = new URLSearchParams();
-		if ($auth.isAdmin) {
-			if (searchQuery) params.append('searchQuery', searchQuery);
-		} else {
-			params.append('searchQuery', $auth.id_no || '');
+
+		loading = true;
+
+		// 이전 요청 취소
+		if (abortController) {
+			abortController.abort();
 		}
-		if (selectedYear) params.append('year', selectedYear);
-		const response = await fetch(`/api/intellectual_contribution?${params}`, {
-			credentials: 'include'
-		});
-		if (response.ok) {
-			const data = await response.json();
-			if (data.facultyList) {
-				facultyList = $auth.isAdmin ? data.facultyList : [];
+		abortController = new AbortController();
+
+		try {
+			const params = new URLSearchParams();
+			if ($auth.isAdmin) {
+				if (searchQuery) params.append('searchQuery', searchQuery);
+			} else {
+				params.append('searchQuery', $auth.id_no || '');
+			}
+			if (selectedYear) params.append('year', selectedYear);
+
+			const response = await fetch(`/api/intellectual_contribution?${params}`, {
+				credentials: 'include',
+				signal: abortController.signal
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				if (data.facultyList) {
+					facultyList = $auth.isAdmin ? data.facultyList : [];
+					researchOutputs = [];
+					selectedFaculty = null;
+				} else {
+					facultyList = [];
+					selectedFaculty = data.faculty;
+					researchOutputs = data.researchOutputs;
+				}
+			} else {
+				console.error('Failed to fetch data:', await response.json());
 				researchOutputs = [];
 				selectedFaculty = null;
-			} else {
 				facultyList = [];
-				selectedFaculty = data.faculty;
-				researchOutputs = data.researchOutputs;
 			}
-		} else {
-			console.error('Failed to fetch data:', await response.json());
-			researchOutputs = [];
-			selectedFaculty = null;
-			facultyList = [];
+		} catch (error: any) {
+			if (error.name === 'AbortError') {
+				console.log('Fetch aborted');
+			} else {
+				console.error('Error fetching data:', error);
+				researchOutputs = [];
+				selectedFaculty = null;
+				facultyList = [];
+			}
+		} finally {
+			loading = false;
+			abortController = null;
 		}
 	}
 
+	// 연도 버튼 클릭 핸들러 수정
+	function handleYearClick(year: string) {
+		if (selectedYear !== year) {
+			selectedYear = year;
+			fetchResearchOutputs();
+		}
+	}
+
+	// selectFaculty 수정 (fetch 호출 부분만)
 	function selectFaculty(faculty: Faculty) {
 		if (!$auth.isAdmin) return;
 		selectedFaculty = faculty;
@@ -504,7 +541,13 @@
 		</tr>
 	</thead>
 	<tbody>
-		{#if researchOutputs.length === 0 && selectedFaculty}
+		{#if loading}
+			<tr>
+				<td colspan="8" class="border p-4 text-center text-gray-500">
+					데이터를 불러오는 중입니다...
+				</td>
+			</tr>
+		{:else if researchOutputs.length === 0 && selectedFaculty}
 			<tr>
 				<td colspan="8" class="border p-4 text-center text-gray-500">
 					해당 탭에 데이터가 없습니다.
@@ -519,6 +562,7 @@
 								type="checkbox"
 								checked={output.is_aacsb_managed}
 								on:change={(e) => updateAacsbManaged(output.research_id, e.currentTarget.checked)}
+								disabled={loading}
 							/>
 							<span class="ml-2">{getTypeLabel(output.type)}</span>
 						</label>
@@ -542,6 +586,7 @@
 								class="ml-2 text-blue-500 hover:text-blue-700"
 								on:click={() => openEditPopup(output)}
 								aria-label="add english title"
+								disabled={loading}
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path
@@ -574,7 +619,7 @@
 								name={`research_type_${output.research_id}`}
 								checked={output.is_basic}
 								on:change={() => updateClassification(output.research_id, 'is_basic', true)}
-								disabled={!output.is_aacsb_managed}
+								disabled={!output.is_aacsb_managed || loading}
 							/>
 							<span class="ml-1">Basic Scholarship</span>
 						</label>
@@ -584,7 +629,7 @@
 								name={`research_type_${output.research_id}`}
 								checked={output.is_applied}
 								on:change={() => updateClassification(output.research_id, 'is_applied', true)}
-								disabled={!output.is_aacsb_managed}
+								disabled={!output.is_aacsb_managed || loading}
 							/>
 							<span class="ml-1">Applied Scholarship</span>
 						</label>
@@ -594,7 +639,7 @@
 								name={`research_type_${output.research_id}`}
 								checked={output.is_teaching}
 								on:change={() => updateClassification(output.research_id, 'is_teaching', true)}
-								disabled={!output.is_aacsb_managed}
+								disabled={!output.is_aacsb_managed || loading}
 							/>
 							<span class="ml-1">Teaching Scholarship</span>
 						</label>
@@ -606,7 +651,7 @@
 								name={`contribution_type_${output.research_id}`}
 								checked={output.is_peer_journal}
 								on:change={() => updateClassification(output.research_id, 'is_peer_journal', true)}
-								disabled={!output.is_aacsb_managed}
+								disabled={!output.is_aacsb_managed || loading}
 							/>
 							<span class="ml-1">Peer reviewed Journal</span>
 						</label>
@@ -617,7 +662,7 @@
 								checked={output.is_other_reviewed}
 								on:change={() =>
 									updateClassification(output.research_id, 'is_other_reviewed', true)}
-								disabled={!output.is_aacsb_managed}
+								disabled={!output.is_aacsb_managed || loading}
 							/>
 							<span class="ml-1">Other reviewed Journal</span>
 						</label>
@@ -628,7 +673,7 @@
 								checked={output.is_other_nonreviewed}
 								on:change={() =>
 									updateClassification(output.research_id, 'is_other_nonreviewed', true)}
-								disabled={!output.is_aacsb_managed}
+								disabled={!output.is_aacsb_managed || loading}
 							/>
 							<span class="ml-1">Other Nonreviewed</span>
 						</label>
@@ -639,6 +684,7 @@
 								class="mr-2 text-yellow-500 hover:text-yellow-600"
 								on:click={() => openModifyPopup(output)}
 								aria-label="Modify research output"
+								disabled={loading}
 							>
 								<svg class="inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path
@@ -653,6 +699,7 @@
 								class="text-red-500 hover:text-red-600"
 								on:click={() => openDeletePopup(output)}
 								aria-label="Delete research output"
+								disabled={loading}
 							>
 								<svg class="inline h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path
