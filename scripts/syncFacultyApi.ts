@@ -63,7 +63,7 @@ function parseTimestamp(dateStr: string): string {
 
 async function syncToDb(data: FacultyData[]) {
 	for (const row of data) {
-		console.log(`🔍 처리 중 데이터: ${JSON.stringify(row)}`);
+		// console.log(`🔍 처리 중 데이터: ${JSON.stringify(row)}`);
 		const user_id = row.userId.trim();
 		const campus = row.campus.trim() || null;
 		const college = row.college.trim() || null;
@@ -185,15 +185,26 @@ async function syncToDb(data: FacultyData[]) {
 						now // updated_at만 now
 					];
 				} else {
-					console.log(
-						`ℹ️ 최신 데이터 없음: user_id=${user_id}, name=${name}, source_updated_at=${source_updated_at}, target_updated_at=${target_updated_at}`
-					);
+					// console.log(
+					// 	`ℹ️ 최신 데이터 없음: user_id=${user_id}, name=${name}, source_updated_at=${source_updated_at}, target_updated_at=${target_updated_at}`
+					// );
 					continue; // 최신 데이터가 아니면 스킵
 				}
 			}
 
-			const result = await query(queryText, queryParams);
-			console.log(`✅ 쿼리 실행 결과: user_id=${user_id}`);
+			try {
+				const result: any = await query(queryText, queryParams);
+				if (result.rowCount > 0) {
+					console.log(
+						`✅ ${existing.length === 0 ? '신규 삽입' : '업데이트'}:  user_id=${user_id}, name=${name}`
+					);
+				}
+			} catch (err) {
+				console.error(`❌ 쿼리 실행 실패:  user_id=${user_id}, name=${name}`, err);
+			}
+
+
+			// console.log(`✅ 쿼리 실행 결과: user_id=${user_id}`);
 			// console.log(`✅ 쿼리 실행 결과: user_id=${user_id}, affected_rows=${result.rowCount}`);
 		} catch (err) {
 			console.error(`❌ 쿼리 실행 실패: user_id=${user_id}, name=${name}`, err);

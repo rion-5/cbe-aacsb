@@ -75,7 +75,7 @@ function safeTrim(value: string | undefined | null): string | null {
 
 async function syncToDb(data: ResearchData[]) {
 	for (const row of data) {
-		console.log(`🔍 처리 중 데이터: ${JSON.stringify(row)}`);
+		// console.log(`🔍 처리 중 데이터: ${JSON.stringify(row)}`);
 
 		// 필수 필드 확인
 		if (!row.researchId || !row.userId || !row.tiltle || !row.publishedAt) {
@@ -203,14 +203,27 @@ async function syncToDb(data: ResearchData[]) {
 						now
 					];
 				} else {
-					console.log(
-						`ℹ️ 최신 데이터 없음: api_research_id=${api_research_id}, source_updated_at=${source_updated_at}, target_updated_at=${target_updated_at}`
-					);
+					// console.log(
+					// 	`ℹ️ 최신 데이터 없음: api_research_id=${api_research_id}, source_updated_at=${source_updated_at}, target_updated_at=${target_updated_at}`
+					// );
 					continue; // 최신 데이터가 아니면 스킵
 				}
 			}
 
-			const result = await query(queryText, queryParams);
+			try {
+				const result: any = await query(queryText, queryParams);
+				if (result.rowCount > 0) {
+					console.log(
+						`✅ ${existing.length === 0 ? '신규 삽입' : '업데이트'}: api_research_id=${api_research_id}, name=${name}`
+					);
+				}
+			} catch (err) {
+				console.error(`❌ 쿼리 실행 실패: api_research_id=${api_research_id}, name=${name}`, err);
+			}
+
+
+
+
 			console.log(
 				// `✅ 쿼리 실행 결과: api_research_id=${api_research_id}, affected_rows=${result.rowCount}`
 				`✅ 쿼리 실행 결과: api_research_id=${api_research_id}`
