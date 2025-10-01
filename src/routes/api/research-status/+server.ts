@@ -52,7 +52,7 @@ export const GET: RequestHandler = async ({ url }: { url: URL }) => {
       INNER JOIN aacsb_faculty af ON (aro.fac_nip = af.user_id)
       WHERE aro.is_aacsb_managed = true 
         AND EXTRACT(YEAR FROM aro.published_at) BETWEEN $1 AND $2
-      GROUP BY af.user_id
+      GROUP BY af.user_id, af.name
       ORDER BY af.name
     `;
     const requiredData = await query<{ user_id: string, required_count: number }>(requiredQuery, [startYear, endYear]);
