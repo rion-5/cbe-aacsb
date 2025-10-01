@@ -57,11 +57,16 @@ export const load: PageServerLoad = async ({ url, fetch, cookies }) => {
     throw new Error('Invalid user info received');
   }
 
-  // const daehakCd = userInfo.daehakCd;
+  const sosokCd = userInfo.sosokCd;
   const userGb = userInfo.userGb;
   // if (daehakCd !== 'Y0000502') {
   //   throw redirect(302, '/?error=invalid_college');
   // }
+  const allowedSosokCd = ['Y0000519', 'Y0000968', 'Y0000984', 'Y0001099'];
+  // Y0000519 : 경영학부 Y0000968 : 보험계리학과 Y0000984 : 회계세무학과 Y0001099 : 경상대학 RC 행정팀
+  if (!allowedSosokCd.includes(sosokCd)) {
+    throw redirect(302, '/?error=invalid_status');
+  }
 
   const allowedUserGbs = ['0010', '0020', '0030'];
   // 0010 교수 0020 강사  0030 직원  0110 재학생 0120 휴학생  0150 수료생  0180 학사취득유예
