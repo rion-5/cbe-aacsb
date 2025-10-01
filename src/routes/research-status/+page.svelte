@@ -5,6 +5,7 @@
 	import { auth } from '$lib/stores/auth';
 
 	export let data: PageData;
+
 	let { facultyList, yearRange } = data;
 	let loading = false;
 
@@ -40,71 +41,117 @@
 	<title>연구성과 입력 상태</title>
 </svelte:head>
 
-<div class="container">
-	<h1>연구성과 입력 상태 (최근 5년: {yearRange})</h1>
+<div class="mx-auto max-w-full px-4 py-6">
+	<div class="mb-6">
+		<h1 class="mb-2 text-3xl font-bold text-gray-900">연구성과 입력 상태</h1>
+		<p class="text-gray-600">최근 5년: {yearRange}</p>
+	</div>
 
 	{#if loading}
-		<p>로딩 중...</p>
+		<div class="rounded-lg bg-white p-8 text-center shadow-md">
+			<div class="inline-flex items-center">
+				<svg class="mr-3 -ml-1 h-8 w-8 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+					></circle>
+					<path
+						class="opacity-75"
+						fill="currentColor"
+						d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+					></path>
+				</svg>
+				<span class="text-lg font-medium text-gray-700">데이터를 불러오고 있습니다...</span>
+			</div>
+		</div>
 	{:else}
-		<table class="status-table">
-			<thead>
-				<tr>
-					<th>ID</th>
-					<th>성명</th>
-					<th>학과</th>
-					<th>필요 수</th>
-					<th>처리 수</th>
-					<th>처리 비율 (%)</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each facultyList as fac}
-					<tr>
-						<td>{fac.user_id}</td>
-						<td>{fac.name || '-'}</td>
-						<td>{fac.department || '-'}</td>
-						<td>{fac.required}</td>
-						<td>{fac.processed}</td>
-						<td>{fac.ratio}%</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
+		<div class="overflow-hidden rounded-lg bg-white shadow-md">
+			<div class="border-b border-gray-200 px-6 py-4">
+				<h2 class="text-xl font-semibold text-gray-900">
+					교수별 입력 현황 ({facultyList.length}명)
+				</h2>
+			</div>
 
-		<div class="actions">
-			<button on:click={downloadExcel} disabled={facultyList.length === 0}> Excel 다운로드 </button>
+			<div class="overflow-x-auto">
+				<table class="min-w-full divide-y divide-gray-200">
+					<thead class="bg-gray-50">
+						<tr>
+							<th
+								class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
+								ID
+							</th>
+							<th
+								class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
+								성명
+							</th>
+							<th
+								class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
+								학과
+							</th>
+							<th
+								class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
+								필요 수
+							</th>
+							<th
+								class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
+								처리 수
+							</th>
+							<th
+								class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
+								처리 비율
+							</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-200 bg-white">
+						{#each facultyList as fac}
+							<tr class="hover:bg-gray-50">
+								<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-900">
+									{fac.user_id}
+								</td>
+								<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-900">
+									{fac.name || '-'}
+								</td>
+								<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-900">
+									{fac.department || '-'}
+								</td>
+								<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-900">
+									{fac.required}
+								</td>
+								<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-900">
+									{fac.processed}
+								</td>
+								<td class="px-4 py-4 text-sm whitespace-nowrap">
+									<span
+										class="font-medium {fac.ratio >= 100
+											? 'text-green-600'
+											: fac.ratio >= 50
+												? 'text-yellow-600'
+												: 'text-red-600'}"
+									>
+										{fac.ratio}%
+									</span>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+
+			<div class="border-t border-gray-200 px-6 py-4">
+				<div class="flex justify-end">
+					<button
+						on:click={downloadExcel}
+						disabled={facultyList.length === 0}
+						class="rounded bg-blue-500 px-6 py-2 text-white transition-colors duration-200 hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-gray-400"
+					>
+						Excel 다운로드
+					</button>
+				</div>
+			</div>
 		</div>
 	{/if}
 </div>
-
-<style>
-	.container {
-		max-width: 1200px;
-		margin: 0 auto;
-		padding: 20px;
-	}
-	table {
-		width: 100%;
-		border-collapse: collapse;
-	}
-	th,
-	td {
-		border: 1px solid #ddd;
-		padding: 8px;
-		text-align: left;
-	}
-	th {
-		background-color: #f2f2f2;
-	}
-	.actions {
-		margin-top: 20px;
-		text-align: right;
-	}
-	button {
-		padding: 10px 20px;
-		background: #007acc;
-		color: white;
-		border: none;
-		cursor: pointer;
-	}
-</style>
