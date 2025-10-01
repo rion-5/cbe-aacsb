@@ -35,7 +35,6 @@ export const GET: RequestHandler = async ({ url }: { url: URL }) => {
           f.full_time_equivalent
       FROM aacsb_faculty af
       JOIN faculty f ON af.user_id = f.fac_nip
-      WHERE f.full_time_equivalent = true
       ORDER BY af.name
       `
     );
