@@ -92,6 +92,16 @@
 							<th
 								class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
 							>
+								직급
+							</th>
+							<th
+								class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
+								최종학위
+							</th>
+							<th
+								class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
+							>
 								필요 수
 							</th>
 							<th
@@ -117,6 +127,12 @@
 								</td>
 								<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-900">
 									{fac.department || '-'}
+								</td>
+								<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-900">
+									{fac.job_rank || '-'}
+								</td>
+								<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-900">
+									{fac.highest_degree || '-'}
 								</td>
 								<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-900">
 									{fac.required}

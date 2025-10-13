@@ -530,8 +530,8 @@
 		<tr class="bg-gray-200">
 			<th class="w-23 border p-2">Type</th>
 			<th class="border p-2">Title</th>
-			<th class="w-25 border p-2 break-words whitespace-normal">Journal</th>
-			<th class="w-25 border p-2">Publisher</th>
+			<th class="w-25 border p-2 break-words whitespace-normal">Journal / Conference</th>
+			<th class="w-25 border p-2">Publisher / Organization</th>
 			<th class="w-25 border p-2 break-words whitespace-normal">Publication<br />Date</th>
 			<th class="w-50 border p-2 break-words whitespace-normal">Portfolio of<br />Intellectual</th>
 			<th class="w-50 border p-2 break-words whitespace-normal"

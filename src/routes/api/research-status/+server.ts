@@ -34,7 +34,7 @@ export const GET: RequestHandler = async ({ url }: { url: URL }) => {
           f.fac_cqualaacsb2013,
           f.full_time_equivalent
       FROM aacsb_faculty af
-      JOIN faculty f ON af.user_id = f.fac_nip
+      inner JOIN faculty f ON af.user_id = f.fac_nip
       ORDER BY af.name
       `
     );
@@ -89,6 +89,8 @@ export const GET: RequestHandler = async ({ url }: { url: URL }) => {
         user_id: f.user_id,
         name: f.name || f.fac_name,
         department: f.department,
+        job_rank: f.job_rank,
+        highest_degree: f.highest_degree,
         required,
         processed: processedCount,
         ratio
@@ -117,9 +119,9 @@ export const POST: RequestHandler = async ({ request }: { request: Request }) =>
         aro.fac_nip,
         aro.name,
         aro.type,
-        aro.title,
-        aro.journal_name,
-        aro.publisher,
+        COALESCE(NULLIF(TRIM(aro.english_title), ''), aro.title) AS title,
+        COALESCE(NULLIF(TRIM(aro.english_journal), ''), aro.journal_name) AS journal_name,
+        COALESCE(NULLIF(TRIM(aro.english_publisher), ''), aro.publisher) AS publisher,
         aro.published_at,
         EXTRACT(YEAR FROM aro.published_at) as year,
         arc.is_basic as B,
@@ -130,9 +132,10 @@ export const POST: RequestHandler = async ({ request }: { request: Request }) =>
         arc.is_other_nonreviewed as OT
       FROM aacsb_research_outputs aro 
       LEFT JOIN aacsb_research_classifications arc ON (arc.research_id = aro.research_id)
+      inner join faculty f on (aro.fac_nip = f.fac_nip)
       WHERE aro.is_aacsb_managed = true 
-        AND EXTRACT(YEAR FROM aro.published_at) BETWEEN $1 AND $2
-      ORDER BY aro.fac_nip, year
+      AND EXTRACT(YEAR FROM aro.published_at) BETWEEN $1 AND $2
+      ORDER BY aro.name, year
       `,
       [startYear, endYear]
     );
