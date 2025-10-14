@@ -136,3 +136,17 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ error: 'Internal Server Error' }, { status: 500 });
   }
 };
+
+export const DELETE: RequestHandler = async ({ request }) => {
+  try {
+    const { user_id } = await request.json();
+    if (!user_id) {
+      return json({ error: 'user_id is required' }, { status: 400 });
+    }
+    await query('DELETE FROM faculty WHERE fac_nip = $1', [user_id]);
+    return json({ success: true });
+  } catch (error) {
+    console.error('API error:', error);
+    return json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+};

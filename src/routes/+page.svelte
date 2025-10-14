@@ -116,6 +116,26 @@
 			console.error(err);
 		}
 	}
+
+	async function deleteFaculty() {
+		if (!selectedFaculty || isNewFaculty) return;
+		if (!confirm('정말 삭제하시겠습니까?')) return;
+		try {
+			const response = await fetch('/api/faculty', {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ user_id: selectedFaculty.user_id })
+			});
+			if (!response.ok) throw new Error('Failed to delete faculty');
+			showModal = false;
+			selectedFaculty = null;
+			await Promise.all([fetchFaculty(), fetchNonMatchedFaculty()]);
+		} catch (err) {
+			error = 'Failed to delete faculty';
+			console.error(err);
+		}
+	}
+
 	async function downloadExcel() {
 		const res = await fetch('/api/faculty/excel_download');
 		if (res.ok) {
@@ -189,7 +209,7 @@
 								{
 									user_id: faculty.user_id,
 									name: faculty.name,
-									fac_name: faculty.english_name || '',
+									fac_name: faculty.english_name,
 									college: faculty.college,
 									department: faculty.department,
 									specialty_field1: '',
@@ -207,30 +227,7 @@
 								},
 								true
 							)}
-						on:keydown={(e) =>
-							handleKeydown(
-								e,
-								{
-									user_id: faculty.user_id,
-									name: faculty.name,
-									fac_name: faculty.english_name || '',
-									college: faculty.college,
-									department: faculty.department,
-									specialty_field1: '',
-									specialty_field2: '',
-									normal_professional_responsibilities: '',
-									fac_discipline: '',
-									fac_time: 0,
-									fac_ccataacsb: '',
-									fac_cqualaacsb2013: '',
-									full_time_equivalent: false,
-									job_type: faculty.job_type,
-									job_rank: faculty.job_rank,
-									highest_degree: faculty.highest_degree,
-									highest_degree_year: faculty.highest_degree_year
-								},
-								true
-							)}
+						on:keydown={(e) => handleKeydown(e, null, true)}
 					>
 						<div class="flex w-1/3 items-center">
 							<h4 class="text-lg font-semibold text-gray-800">{faculty.name}</h4>
@@ -349,14 +346,29 @@
 							bind:checked={selectedFaculty.full_time_equivalent}
 							class="col-span-1"
 						/>
-						<div class="col-span-2 mt-4 flex justify-end gap-4">
-							<button
-								type="button"
-								class="rounded-md bg-gray-300 px-4 py-2"
-								on:click={() => (showModal = false)}>Cancel</button
-							>
-							<button type="submit" class="rounded-md bg-blue-600 px-4 py-2 text-white">Save</button
-							>
+
+						<div class="col-span-2 mt-4 flex justify-between gap-4">
+							<div class="flex gap-4">
+								{#if !isNewFaculty}
+									<button
+										type="button"
+										class="delete-btn rounded-md bg-red-700 px-4 py-2 text-white hover:bg-red-800"
+										on:click={deleteFaculty}>Delete</button
+									>
+								{/if}
+							</div>
+							<div class="flex gap-4">
+								<button
+									type="button"
+									class="cancel-btn rounded-md bg-gray-300 px-4 py-2 hover:bg-gray-400"
+									on:click={() => (showModal = false)}>Cancel</button
+								>
+								<button
+									type="submit"
+									class="save-btn rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+									>Save</button
+								>
+							</div>
 						</div>
 					</form>
 				{/if}
@@ -371,7 +383,7 @@
 		margin-top: 20px;
 		text-align: right;
 	}
-	button {
+	.actions button {
 		padding: 10px 20px;
 		background: #007acc;
 		color: white;
