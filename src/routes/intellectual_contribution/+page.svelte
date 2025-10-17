@@ -581,7 +581,7 @@
 								[DOI]
 							</a>
 						{/if}
-						{#if isKorean(output.title)}
+						{#if isKorean(output.title) || (output.journal_name && isKorean(output.journal_name)) || (output.publisher && isKorean(output.publisher))}
 							<button
 								class="ml-2 text-blue-500 hover:text-blue-700"
 								on:click={() => openEditPopup(output)}
