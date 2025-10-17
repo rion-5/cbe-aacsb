@@ -107,6 +107,8 @@ export const GET: RequestHandler = async ({ url }: { url: URL }) => {
   }
 };
 
+// POST 핸들러 수정 부분
+// src/routes/api/research-status/+server.ts
 export const POST: RequestHandler = async ({ request }: { request: Request }) => {
   try {
     const currentYear = new Date().getFullYear();
@@ -140,39 +142,58 @@ export const POST: RequestHandler = async ({ request }: { request: Request }) =>
       [startYear, endYear]
     );
 
-    // published_at을 JavaScript Date 객체로 변환
+    // 헤더에서 published_at과 year 컬럼 인덱스 찾기
+    const headers = ['fac_nip', 'name', 'type', 'title', 'journal_name', 'publisher', 'published_at', 'year', 'B', 'A', 'T', 'JO', 'AD', 'OT'];
+    const publishedAtCol = headers.indexOf('published_at');
+    const yearCol = headers.indexOf('year');
+
+    // 데이터를 변환하여 날짜 객체로 변경
     const processedData = data.map(row => ({
       ...row,
-      published_at: row.published_at ? new Date(row.published_at) : null
+      published_at: row.published_at ? new Date(row.published_at) : null,
+      year: row.year ? Number(row.year) : null
     }));
 
-    const ws = XLSX.utils.json_to_sheet(processedData);
+    // 변환된 데이터로 시트 재생성
+    const ws2 = XLSX.utils.json_to_sheet(processedData);
 
-    // published_at 컬럼에 날짜 형식 적용
-    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-    const publishedAtColIndex = Object.keys(processedData[0] || {}).indexOf('published_at');
+    // 날짜 형식 적용
+    const range2 = XLSX.utils.decode_range(ws2['!ref'] || 'A1');
 
-    for (let row = 1; row <= range.e.r; row++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: row, c: publishedAtColIndex });
-      if (ws[cellAddress] && ws[cellAddress].v instanceof Date) {
-        ws[cellAddress].t = 'd'; // 'd' = date type
-        ws[cellAddress].z = 'yyyy-mm-dd'; // 날짜 형식 지정
+    // 각 행에 대해 날짜 형식 적용
+    for (let R = range2.s.r + 1; R <= range2.e.r; ++R) {
+      // published_at 컬럼 (날짜-시간 형식)
+      const publishedAtCell = ws2[XLSX.utils.encode_cell({ r: R, c: publishedAtCol })];
+      if (publishedAtCell && publishedAtCell.v instanceof Date) {
+        publishedAtCell.t = 'd'; // 날짜 타입으로 설정
+        publishedAtCell.z = 'yyyy-mm-dd'; // 날짜 형식 지정
+      }
+
+      // year 컬럼 (연도만 표시)
+      const yearCell = ws2[XLSX.utils.encode_cell({ r: R, c: yearCol })];
+      if (yearCell && yearCell.v) {
+        yearCell.t = 'n'; // 숫자 타입으로 설정
+        yearCell.z = '0'; // 정수 형식
       }
     }
 
-    // 컬럼 너비 자동 조정 (선택사항)
-    const colWidths = Object.keys(processedData[0] || {}).map(key => ({
-      wch: Math.max(key.length, 15)
-    }));
-    ws['!cols'] = colWidths;
+    // 컬럼 너비 자동 조정
+    const colWidths = headers.map((header, idx) => {
+      let maxWidth = header.length;
+      for (let R = range2.s.r + 1; R <= range2.e.r; ++R) {
+        const cell = ws2[XLSX.utils.encode_cell({ r: R, c: idx })];
+        if (cell && cell.v) {
+          const cellLength = String(cell.v).length;
+          maxWidth = Math.max(maxWidth, cellLength);
+        }
+      }
+      return { wch: Math.min(maxWidth + 2, 50) }; // 최대 50자로 제한
+    });
+    ws2['!cols'] = colWidths;
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Research Outputs');
-    const buffer = XLSX.write(wb, {
-      type: 'buffer',
-      bookType: 'xlsx',
-      cellDates: true // 날짜를 Date 객체로 유지
-    });
+    XLSX.utils.book_append_sheet(wb, ws2, 'Research Outputs');
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
     return new Response(buffer, {
       status: 200,
