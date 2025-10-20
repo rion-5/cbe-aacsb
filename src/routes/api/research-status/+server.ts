@@ -108,7 +108,6 @@ export const GET: RequestHandler = async ({ url }: { url: URL }) => {
 };
 
 // POST 핸들러 수정 부분
-// src/routes/api/research-status/+server.ts
 export const POST: RequestHandler = async ({ request }: { request: Request }) => {
   try {
     const currentYear = new Date().getFullYear();
@@ -117,15 +116,14 @@ export const POST: RequestHandler = async ({ request }: { request: Request }) =>
 
     const data = await query<any>(
       `
-      SELECT 
+      SELECT
+        f.fac_discipline as t_discpline,
         aro.fac_nip,
-        aro.name,
-        aro.type,
+        EXTRACT(YEAR FROM aro.published_at) as year,
+        aro.published_at as date,
         COALESCE(NULLIF(TRIM(aro.english_title), ''), aro.title) AS title,
         COALESCE(NULLIF(TRIM(aro.english_journal), ''), aro.journal_name) AS journal_name,
         COALESCE(NULLIF(TRIM(aro.english_publisher), ''), aro.publisher) AS publisher,
-        aro.published_at,
-        EXTRACT(YEAR FROM aro.published_at) as year,
         arc.is_basic as B,
         arc.is_applied as A,
         arc.is_teaching as T,
@@ -133,7 +131,7 @@ export const POST: RequestHandler = async ({ request }: { request: Request }) =>
         arc.is_other_reviewed as AD,
         arc.is_other_nonreviewed as OT
       FROM aacsb_research_outputs aro 
-      LEFT JOIN aacsb_research_classifications arc ON (arc.research_id = aro.research_id)
+      inner JOIN aacsb_research_classifications arc ON (arc.research_id = aro.research_id)
       inner join faculty f on (aro.fac_nip = f.fac_nip)
       WHERE aro.is_aacsb_managed = true 
       AND EXTRACT(YEAR FROM aro.published_at) BETWEEN $1 AND $2
@@ -143,14 +141,14 @@ export const POST: RequestHandler = async ({ request }: { request: Request }) =>
     );
 
     // 헤더에서 published_at과 year 컬럼 인덱스 찾기
-    const headers = ['fac_nip', 'name', 'type', 'title', 'journal_name', 'publisher', 'published_at', 'year', 'B', 'A', 'T', 'JO', 'AD', 'OT'];
-    const publishedAtCol = headers.indexOf('published_at');
+    const headers = ['t_discpline', 'fac_nip', 'year', 'date', 'title', 'journal_name', 'publisher', 'B', 'A', 'T', 'JO', 'AD', 'OT'];
+    const publishedAtCol = headers.indexOf('date');
     const yearCol = headers.indexOf('year');
 
     // 데이터를 변환하여 날짜 객체로 변경
     const processedData = data.map(row => ({
       ...row,
-      published_at: row.published_at ? new Date(row.published_at) : null,
+      date: row.date ? new Date(row.date) : null,
       year: row.year ? Number(row.year) : null
     }));
 
