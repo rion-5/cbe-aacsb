@@ -479,7 +479,7 @@
 			{#each years as year}
 				<button
 					class:bg-blue-500={selectedYear === year}
-					class:bg-gray-200={selectedYear !== year}
+					class:bg-indigo-300={selectedYear !== year}
 					class="mr-2 rounded px-4 py-2 text-white"
 					on:click={() => {
 						selectedYear = year;
