@@ -1108,7 +1108,10 @@
 							stroke-width="2"
 							d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
 						/>
-					</svg> 를 눌러서 영문정보를 추가할 수 있습니다.
+					</svg>
+					를 눌러서 반드시 영문정보를 추가하셔야 합니다.<span class="font-medium text-red-600"
+						>[필수]</span
+					>
 				</p>
 				<p>
 					- <strong class="font-semibold text-blue-700">추가/수정/삭제</strong>: 업적평가 대상
