@@ -1,4 +1,3 @@
-<!-- src/routes/intellcectual_contribution/+page.svlete -->
 <script lang="ts">
 	import { onMount, afterUpdate } from 'svelte';
 	import { auth } from '$lib/stores/auth';
@@ -14,7 +13,6 @@
 		selectedFaculty: Faculty | null;
 		facultyList: Faculty[];
 	};
-
 	const years = Array.from({ length: 5 }, (_, i) =>
 		(new Date().getFullYear() - i).toString()
 	).reverse();
@@ -50,12 +48,43 @@
 	let modifyType = '';
 
 	let helpDialogRef: HTMLDivElement | null = null;
+	// 수정: 초기값을 false로 설정하고 onMount에서 로컬 스토리지를 확인합니다.
 	let showHelp = false;
+	// 추가: "다시 보지 않기" 상태 저장
+	let dontShowHelpAgain = false;
+
+	// 추가: 로컬 스토리지 키
+	const helpStorageKey = 'intellectualContributionHelpDontShowAgain';
+
+	// 추가: onMount 로직 수정
+	onMount(() => {
+		// 로컬 스토리지에서 상태를 확인합니다.
+		const storedValue = localStorage.getItem(helpStorageKey);
+		dontShowHelpAgain = storedValue === 'true';
+
+		// 처음 로드될 때만, 다시 보지 않기가 체크되지 않았다면 도움말을 표시합니다.
+		if (!dontShowHelpAgain) {
+			showHelp = true;
+		}
+	});
+
+	// 추가: "다시는 보지 않기" 체크박스 변경 핸들러
+	function handleDontShowHelpAgainChange(e: Event) {
+		const target = e.target as HTMLInputElement;
+		dontShowHelpAgain = target.checked;
+		if (dontShowHelpAgain) {
+			// 체크되면 로컬 스토리지에 상태를 저장합니다.
+			localStorage.setItem(helpStorageKey, 'true');
+			// closeHelpPopup();
+		} else {
+			// 체크 해제 시 로컬 스토리지에서 상태를 'false'로 설정합니다.
+			localStorage.setItem(helpStorageKey, 'false');
+		}
+	}
 
 	// 추가: 로딩 상태 및 AbortController
 	let loading = false;
 	let abortController: AbortController | null = null;
-
 	const getTypeLabel = (type: string | null | undefined) => {
 		if (!type) return '';
 		const typeLabels: Record<string, string> = {
@@ -67,7 +96,6 @@
 		};
 		return typeLabels[type] || type;
 	};
-
 	function isKorean(text: string): boolean {
 		return /[\uAC00-\uD7AF]/.test(text);
 	}
@@ -92,7 +120,6 @@
 		}
 
 		loading = true;
-
 		// 이전 요청 취소
 		if (abortController) {
 			abortController.abort();
@@ -107,7 +134,6 @@
 				params.append('searchQuery', $auth.id_no || '');
 			}
 			if (selectedYear) params.append('year', selectedYear);
-
 			const response = await fetch(`/api/intellectual_contribution?${params}`, {
 				credentials: 'include',
 				signal: abortController.signal
@@ -743,7 +769,10 @@
 						<th class="border p-2">학과</th>
 						<th class="border p-2">직무유형</th>
 						<th class="border p-2">직급</th>
-						<th class="border p-2">최종학위</th>
+						<th
+							class="border
+							p-2">최종학위</th
+						>
 						<th class="border p-2">선택</th>
 					</tr>
 				</thead>
@@ -1042,68 +1071,138 @@
 {/if}
 {#if showHelp}
 	<div
-		class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black"
+		class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black p-4"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="helpModalTitle"
 	>
 		<div
 			bind:this={helpDialogRef}
-			class="w-200 rounded-lg bg-white p-6 shadow-lg"
+			class="w-full max-w-4xl space-y-4 rounded-xl bg-white p-8 shadow-2xl"
 			on:keydown={(e) => e.key === 'Escape' && closeHelpPopup()}
 			tabindex="-1"
 			role="dialog"
 			aria-labelledby="helpModalTitle"
 		>
-			<h3 id="helpModalTitle" class="mb-4 text-lg font-semibold">도움말</h3>
-			<p class="mb-4">
+			<h3 id="helpModalTitle" class="mb-4 border-b pb-2 text-2xl font-bold text-gray-800">
+				연구성과 관리 도움말
+			</h3>
+
+			<p class="mb-6 text-base leading-relaxed text-gray-700">
 				이 화면은 AACSB 유지에 필요한 연구성과 데이터를 수집하여 개인별 CV(Curriculum Vitae)
-				출력용으로 사용됩니다.<br />
-				- <strong>조회된 내용</strong>: 포털에 입력된 연구업적 자료입니다. AACSB에 필요하지 않은
-				경우, Type 열의 체크박스를 해제하여 제외할 수 있습니다.<br />
-				- <strong>영문정보 추가</strong>: 한글 자료일 경우 Title 끝에 있는 ✎ 를 눌러서 영문정보를
-				추가할 수 있습니다.<br />
-				- <strong>추가/수정/삭제</strong>: 업적평가 대상 자료는 아니지만 AACSB에 필요한 자료는,
-				Actions 열에서 추가('+'), 수정(✎), 삭제(–)가 가능합니다. 수동 입력 데이터만 수정/삭제
-				가능합니다.<br />
-				- <strong>분류 선택</strong>: 각 연구성과는 아래의 Portfolio of Intellectual Contributions와
-				Types of Intellectual Contributions에서 각각 하나씩 반드시 선택해야 합니다.
+				출력용으로 사용됩니다.
 			</p>
-			<h4 class="mb-2 font-semibold">Portfolio of Intellectual Contributions</h4>
-			<ul class="mb-4 list-disc pl-5 text-sm">
+
+			<div class="space-y-4 text-sm leading-relaxed text-gray-700">
+				<p>
+					- <strong class="font-semibold text-blue-700">조회된 내용</strong>: 포털에 입력된 연구업적
+					자료입니다. AACSB에 필요하지 않은 경우, Type 열의 체크박스를 해제하여 제외할 수 있습니다.
+				</p>
+				<p class="flex items-center">
+					- <strong class="font-semibold text-blue-700">영문정보 추가</strong>: 한글 자료일 경우
+					Title 끝에 있는
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+						/>
+					</svg> 를 눌러서 영문정보를 추가할 수 있습니다.
+				</p>
+				<p>
+					- <strong class="font-semibold text-blue-700">추가/수정/삭제</strong>: 업적평가 대상
+					자료는 아니지만 AACSB에 필요한 자료는, Actions 열 상단의 추가(+), Actions 열 내의 수정(<span
+						class="font-mono text-lg text-blue-500">✎</span
+					>), 삭제(–)가 가능합니다.
+					<span class="font-medium text-red-600"
+						>(주의: 수동 입력 데이터만 수정/삭제 가능합니다.)</span
+					>
+				</p>
+				<p>
+					- <strong class="font-semibold text-blue-700">분류 선택</strong>: 각 연구성과는 아래의
+					<span class="rounded bg-yellow-100 px-1 font-medium"
+						>Portfolio of Intellectual Contributions</span
+					>와
+					<span class="rounded bg-yellow-100 px-1 font-medium"
+						>Types of Intellectual Contributions</span
+					>에서 각각 하나씩 반드시 선택해야 합니다.
+				</p>
+			</div>
+
+			<h4 class="mt-6 border-t pt-4 text-lg font-bold text-indigo-700">
+				Portfolio of Intellectual Contributions (연구 포트폴리오)
+			</h4>
+			<ul class="list-disc space-y-2 pl-5 text-sm text-gray-700">
 				<li>
-					<strong>Basic or Discovery Scholarship (기초·발견형 학문연구)</strong>: 새로운 지식, 이론,
-					개념을 창출. 예: SCI/SSCI 논문, 새로운 통계모형 개발, 새로운 개념 틀 제안.
+					<strong class="text-gray-800">Basic or Discovery Scholarship (기초·발견형)</strong>:
+					새로운 지식, 이론, 개념을 창출.
+					<span class="ml-3 block text-gray-500"
+						>(예: SCI/SSCI 논문, 새로운 통계모형 개발, 새로운 개념 틀 제안.)</span
+					>
 				</li>
 				<li>
-					<strong>Applied or Integration/Application Scholarship (응용·통합형 연구)</strong>: 기존
-					지식을 실제 문제 해결에 적용하거나 학문 통합. 예: 기업 문제 해결 연구, 정책 제안, 융합
-					연구.
+					<strong class="text-gray-800"
+						>Applied or Integration/Application Scholarship (응용·통합형)</strong
+					>: 기존 지식을 실제 문제 해결에 적용하거나 학문 통합.
+					<span class="ml-3 block text-gray-500"
+						>(예: 기업 문제 해결 연구, 정책 제안, 융합 연구.)</span
+					>
 				</li>
 				<li>
-					<strong>Teaching and Learning Scholarship (교육·학습 중심 연구)</strong>: 교육 방법 및
-					학습 효과 개선. 예: 플립러닝 효과 분석, 교재 개발, 교육 평가 방법 개선.
+					<strong class="text-gray-800">Teaching and Learning Scholarship (교육·학습 중심)</strong>:
+					교육 방법 및 학습 효과 개선.
+					<span class="ml-3 block text-gray-500"
+						>(예: 플립러닝 효과 분석, 교재 개발, 교육 평가 방법 개선.)</span
+					>
 				</li>
 			</ul>
-			<h4 class="mb-2 font-semibold">Types of Intellectual Contributions</h4>
-			<ul class="mb-4 list-disc pl-5 text-sm">
+
+			<h4 class="mt-6 border-t pt-4 text-lg font-bold text-indigo-700">
+				Types of Intellectual Contributions (지적 기여 유형)
+			</h4>
+			<ul class="list-disc space-y-2 pl-5 text-sm text-gray-700">
 				<li>
-					<strong>Peer-reviewed Journal Articles (동료 심사 학술지 논문)</strong>: 동료 심사를 거친
-					학술지 논문. 예: SSCI/Scopus 논문, 국내 등재지 논문.
+					<strong class="text-gray-800"
+						>Peer-reviewed Journal Articles (동료 심사 학술지 논문)</strong
+					>: 동료 심사를 거친 학술지 논문.
+					<span class="ml-3 block text-gray-500">(예: SSCI/Scopus 논문, 국내 등재지 논문.)</span>
 				</li>
 				<li>
-					<strong
-						>Additional Peer- or Editorial-Reviewed Intellectual Contributions (추가 동료/편집 심사
-						지적 기여)</strong
-					>: 동료/편집 심사를 거친 기여. 예: 학술대회 논문집, 편집 심사 챕터, 정책 보고서.
+					<strong class="text-gray-800"
+						>Additional Peer- or Editorial-Reviewed Intellectual Contributions (추가 심사 기여)</strong
+					>: 동료/편집 심사를 거친 기여.
+					<span class="ml-3 block text-gray-500"
+						>(예: 학술대회 논문집, 편집 심사 챕터, 정책 보고서.)</span
+					>
 				</li>
 				<li>
-					<strong>All Other Intellectual Contributions (기타 지적 기여)</strong>: 심사 여부와
-					관계없는 학문/교육/실무 기여. 예: 사례 연구, 세미나 발표, 교과서, 온라인 교육 콘텐츠.
+					<strong class="text-gray-800"
+						>All Other Intellectual Contributions (기타 지적 기여)</strong
+					>: 심사 여부와 관계없는 학문/교육/실무 기여.
+					<span class="ml-3 block text-gray-500"
+						>(예: 사례 연구, 세미나 발표, 교과서, 온라인 교육 콘텐츠.)</span
+					>
 				</li>
 			</ul>
-			<div class="flex justify-end">
-				<button class="rounded bg-gray-300 px-4 py-2 hover:bg-gray-400" on:click={closeHelpPopup}>
+
+			<div class="mt-6 flex items-center justify-between border-t pt-4">
+				<div class="flex items-center">
+					<input
+						id="dontShowAgain"
+						type="checkbox"
+						checked={dontShowHelpAgain}
+						on:change={handleDontShowHelpAgainChange}
+						class="mr-2 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+					/>
+					<label for="dontShowAgain" class="text-base font-medium text-gray-700"
+						>다음부터 이 메시지를 보지 않습니다</label
+					>
+				</div>
+				<button
+					class="rounded-lg bg-gray-300 px-6 py-2 font-semibold text-gray-800 hover:bg-gray-400"
+					on:click={closeHelpPopup}
+				>
 					닫기
 				</button>
 			</div>
