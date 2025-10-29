@@ -461,9 +461,9 @@
 
 <div class="mb-4">
 	<div class="mb-4 flex items-center justify-between">
-		<h2 class="text-xl font-semibold">연구성과 조회</h2>
+		<h2 class="text-2xl font-semibold">연구성과 조회</h2>
 		<button
-			class="rounded bg-blue-500 p-2 text-white hover:bg-blue-600"
+			class="flex items-center gap-2 rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
 			on:click={() => (showHelp = true)}
 			aria-label="Show help"
 		>
@@ -475,6 +475,7 @@
 					d="M13 16h-1v-4h-1m1-4h.01M12 3a9 9 0 100 18 9 9 0 000-18z"
 				/>
 			</svg>
+			<span>도움말</span>
 		</button>
 	</div>
 	<div class="mt-2 flex gap-4">
