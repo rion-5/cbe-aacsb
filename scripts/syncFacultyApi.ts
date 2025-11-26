@@ -92,12 +92,12 @@ async function syncToDb(data: FacultyData[]) {
 			continue;
 		}
 
-		if (college !== '경상대학') {
-			console.warn(
-				`⚠️ 제외됨 (경상대학 아님): user_id=${user_id}, name=${name}, college=${college}`
-			);
-			continue;
-		}
+		// if (college !== '경상대학') {
+		// 	console.warn(
+		// 		`⚠️ 제외됨 (경상대학 아님): user_id=${user_id}, name=${name}, college=${college}`
+		// 	);
+		// 	continue;
+		// }
 
 		try {
 			// 기존 데이터 확인
